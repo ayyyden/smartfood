@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import type { FoodItem } from "@/lib/types";
-import { loadProfile } from "@/lib/profile";
+import { loadProfile, saveProfile } from "@/lib/profile";
 import { useAuth } from "@/context/AuthContext";
 import {
   fetchTodayEntries,
@@ -18,6 +18,7 @@ import {
   updateFoodEntry,
   deleteFoodEntry,
 } from "@/lib/db/food-entries";
+import { fetchProfile } from "@/lib/db/profiles";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -115,8 +116,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (authLoading) return;
 
     async function load() {
-      // Goals from saved profile
-      const profile = loadProfile();
+      // Goals: prefer Supabase profile when signed in; localStorage otherwise
+      let profile = loadProfile();
+      if (user) {
+        try {
+          const dbProfile = await fetchProfile(user.id);
+          if (dbProfile) {
+            profile = dbProfile;
+            saveProfile(dbProfile); // keep localStorage in sync for offline
+          }
+        } catch { /* stay with localStorage fallback */ }
+      }
       dispatch({
         type: "SET_GOALS",
         payload: {

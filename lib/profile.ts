@@ -33,6 +33,7 @@ export type Profile = {
   foodPreferences?: string;
   dislikedFoods?: string;
   onboardingCompleted?: boolean;
+  tutorialCompleted?: boolean;
 };
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -53,6 +54,7 @@ export const DEFAULT_PROFILE: Profile = {
   carbsGoalG:   200,
   fatGoalG:     55,
   dietRules:    [],
+  tutorialCompleted: false,
 };
 
 // ─── Age from date of birth ───────────────────────────────────────────────────
@@ -109,6 +111,11 @@ const GOAL_ADJUSTMENT: Record<FitnessGoal, number> = {
   lose:     -500,
   maintain:    0,
   gain:      300,
+};
+
+// Exported so onboarding can compute TDEE from a recommendation
+export const GOAL_CAL_OFFSET: Partial<Record<string, number>> = {
+  lose: -500, maintain: 0, gain: 300,
 };
 
 const PROTEIN_RATIO: Record<FitnessGoal, number> = {

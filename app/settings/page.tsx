@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 
 type TrackingMode = "smart" | "pro";
 const MODE_KEY = "smartfood_mode";
+const TUTORIAL_REOPEN_KEY = "smartfood_tutorial_reopen";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -136,6 +137,29 @@ export default function SettingsPage() {
               </span>
             </button>
           </div>
+        </div>
+
+        {/* Tutorial */}
+        <div
+          className="rounded-2xl px-5 py-5"
+          style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
+        >
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+            Help
+          </p>
+          <p className="mb-4 text-xs" style={{ color: "var(--sf-text5)" }}>
+            Replay the quick walkthrough to learn how Smartfood works.
+          </p>
+          <button
+            onClick={() => {
+              localStorage.setItem(TUTORIAL_REOPEN_KEY, "1");
+              router.push("/");
+            }}
+            className="w-full rounded-xl py-3 text-sm font-bold transition-all active:scale-95"
+            style={{ backgroundColor: "rgba(0,210,255,0.08)", color: "#00d2ff", border: "1px solid rgba(0,210,255,0.18)" }}
+          >
+            Show quick tutorial
+          </button>
         </div>
 
         {/* Appearance */}

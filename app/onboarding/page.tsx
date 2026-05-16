@@ -13,6 +13,7 @@ import {
   calculateRecommended,
   deriveMacros,
   calculateAge,
+  GOAL_CAL_OFFSET,
 } from "@/lib/profile";
 import DumbbellLogo from "@/components/DumbbellLogo";
 
@@ -403,6 +404,46 @@ export default function OnboardingPage() {
                 </div>
                 {rec && <p className="mt-1.5 text-xs" style={{ color: "#444444" }}>Recommended: {rec.protein}g</p>}
               </div>
+
+              {/* Weight rate estimate */}
+              {(() => {
+                if (!rec || !profile.goal) return null;
+                const offset = GOAL_CAL_OFFSET[profile.goal] ?? 0;
+                const tdee = rec.calories - offset;
+                const dailyDelta = profile.calorieGoal - tdee;
+                const kgPerWeek = Math.round(dailyDelta * 7 / 7700 * 10) / 10;
+                const dispChange = isImperial
+                  ? Math.round(kgPerWeek * 2.2046 * 10) / 10
+                  : kgPerWeek;
+                const unit = isImperial ? "lb" : "kg";
+                const isLoss = kgPerWeek < -0.05;
+                const isGain = kgPerWeek > 0.05;
+                return (
+                  <div
+                    className="rounded-2xl px-4 py-3.5 space-y-1"
+                    style={{ backgroundColor: "#141414", border: "1px solid #252525" }}
+                  >
+                    {isLoss ? (
+                      <p className="text-sm" style={{ color: "#4ade80" }}>
+                        At {profile.calorieGoal.toLocaleString()} cal/day, estimated loss is about{" "}
+                        <strong>{Math.abs(dispChange).toFixed(1)} {unit}/week</strong>.
+                      </p>
+                    ) : isGain ? (
+                      <p className="text-sm" style={{ color: "#fb923c" }}>
+                        At {profile.calorieGoal.toLocaleString()} cal/day, estimated gain is about{" "}
+                        <strong>{dispChange.toFixed(1)} {unit}/week</strong>.
+                      </p>
+                    ) : (
+                      <p className="text-sm" style={{ color: "#888888" }}>
+                        At {profile.calorieGoal.toLocaleString()} cal/day, you&apos;re approximately maintaining your weight.
+                      </p>
+                    )}
+                    <p className="text-xs" style={{ color: "#444444" }}>
+                      Estimate only — actual results vary by individual.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </>
         )}

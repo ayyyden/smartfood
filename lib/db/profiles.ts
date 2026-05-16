@@ -24,6 +24,7 @@ function rowToProfile(row: Record<string, unknown>): Profile {
     foodPreferences:     (row.food_preferences as string) ?? "",
     dislikedFoods:       (row.disliked_foods as string) ?? "",
     onboardingCompleted: Boolean(row.onboarding_completed),
+    tutorialCompleted:   Boolean(row.tutorial_completed),
   };
 }
 
@@ -76,6 +77,15 @@ export async function upsertProfile(userId: string, profile: Profile): Promise<v
     console.error("[upsertProfile] hint:", error.hint);
     throw error;
   }
+}
+
+export async function markTutorialCompleted(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ tutorial_completed: true })
+    .eq("user_id", userId);
+  if (error) throw error;
 }
 
 export async function isOnboardingComplete(userId: string): Promise<boolean> {
