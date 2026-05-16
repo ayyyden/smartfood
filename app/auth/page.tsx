@@ -22,6 +22,21 @@ function getUrlHost(url: string): string {
   try { return new URL(url).hostname; } catch { return "(invalid URL format)"; }
 }
 
+function getErrorMessage(err: unknown): string {
+  if (!err) return "Unknown error";
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    const parts: string[] = [];
+    if (typeof e.message === "string" && e.message) parts.push(e.message);
+    if (typeof e.code    === "string" && e.code)    parts.push(`code: ${e.code}`);
+    if (typeof e.details === "string" && e.details) parts.push(`details: ${e.details}`);
+    if (typeof e.hint    === "string" && e.hint)    parts.push(`hint: ${e.hint}`);
+    return parts.join(" — ") || JSON.stringify(err);
+  }
+  return String(err);
+}
+
 function friendlyAuthError(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes("networkerror") || m.includes("failed to fetch") || m.includes("load failed") || m.includes("fetch")) {
@@ -87,10 +102,12 @@ export default function AuthPage() {
         }
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[Auth] Unexpected throw:", msg);
+      const msg = getErrorMessage(err);
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Auth] full error:", JSON.stringify(err, null, 2));
+      }
 
-      if (msg === "SUPABASE_NOT_CONFIGURED") {
+      if (err instanceof Error && err.message === "SUPABASE_NOT_CONFIGURED") {
         setError("Supabase is not connected. Check environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY).");
       } else {
         setError(friendlyAuthError(msg) || "Something went wrong. Please try again.");

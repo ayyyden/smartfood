@@ -130,6 +130,24 @@ const DIET_OPTS = [
   { value: "no_pork", label: "No Pork" }, { value: "no_shellfish", label: "No Shellfish" },
 ];
 
+// ─── Error helper ─────────────────────────────────────────────────────────────
+// Supabase errors are plain objects, not Error instances — String(err) = "[object Object]"
+
+function getErrorMessage(err: unknown): string {
+  if (!err) return "Unknown error";
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object") {
+    const e = err as Record<string, unknown>;
+    const parts: string[] = [];
+    if (typeof e.message === "string" && e.message) parts.push(e.message);
+    if (typeof e.code    === "string" && e.code)    parts.push(`code: ${e.code}`);
+    if (typeof e.details === "string" && e.details) parts.push(`details: ${e.details}`);
+    if (typeof e.hint    === "string" && e.hint)    parts.push(`hint: ${e.hint}`);
+    return parts.join(" — ") || JSON.stringify(err);
+  }
+  return String(err);
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
@@ -174,9 +192,10 @@ export default function OnboardingPage() {
       await upsertProfile(user.id, { ...profile, onboardingCompleted: true });
       router.push("/");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error("[Onboarding] finish error:", err);
-      setSaveError(msg || "Failed to save profile. Please try again.");
+      if (process.env.NODE_ENV === "development") {
+        console.error("[Onboarding] full error:", JSON.stringify(err, null, 2));
+      }
+      setSaveError(getErrorMessage(err) || "Failed to save profile. Please try again.");
       setSaving(false);
     }
   }
