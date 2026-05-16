@@ -69,7 +69,13 @@ export async function upsertProfile(userId: string, profile: Profile): Promise<v
   const { error } = await supabase
     .from("profiles")
     .upsert(row, { onConflict: "user_id" });
-  if (error) throw error;
+  if (error) {
+    console.error("[upsertProfile] code:", error.code);
+    console.error("[upsertProfile] message:", error.message);
+    console.error("[upsertProfile] details:", error.details);
+    console.error("[upsertProfile] hint:", error.hint);
+    throw error;
+  }
 }
 
 export async function isOnboardingComplete(userId: string): Promise<boolean> {

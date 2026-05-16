@@ -137,6 +137,7 @@ export default function OnboardingPage() {
   const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [profile, setProfile] = useState<Profile>({ ...DEFAULT_PROFILE });
 
   const isImperial  = profile.unitSystem === "imperial";
@@ -166,12 +167,16 @@ export default function OnboardingPage() {
   }
 
   async function finish() {
-    if (!user) return;
+    if (!user) { setSaveError("Not signed in. Please log in again."); return; }
     setSaving(true);
+    setSaveError("");
     try {
       await upsertProfile(user.id, { ...profile, onboardingCompleted: true });
       router.push("/");
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Onboarding] finish error:", err);
+      setSaveError(msg || "Failed to save profile. Please try again.");
       setSaving(false);
     }
   }
@@ -431,6 +436,14 @@ export default function OnboardingPage() {
 
       {/* Footer navigation */}
       <div className="px-5 pb-10 pt-4 space-y-3">
+        {saveError && (
+          <p
+            className="rounded-xl px-4 py-3 text-sm"
+            style={{ backgroundColor: "rgba(255,80,80,0.08)", color: "#ff6060", border: "1px solid rgba(255,80,80,0.2)" }}
+          >
+            {saveError}
+          </p>
+        )}
         {step < TOTAL_STEPS ? (
           <button
             type="button"
