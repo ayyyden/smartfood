@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist);
+}
+
+*,
+*::before,
+*::after {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--sf-bg-deep);
+}
+
+input,
+textarea {
+  font-family: inherit;
+  -webkit-appearance: none;
+}
+
+/* Hide scrollbar but keep scrolling */
+.overflow-y-auto {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.overflow-y-auto::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Theme variables ────────────────────────────────────────── */
+
+:root,
+[data-theme="dark"] {
+  --sf-bg-deep:  #050505;
+  --sf-bg:       #0a0a0a;
+  --sf-surface:  #141414;
+  --sf-surface2: #111111;
+  --sf-surface3: #0d0d0d;
+  --sf-input:    #1c1c1c;
+  --sf-pill:     #1e1e1e;
+  --sf-border:   #1a1a1a;
+  --sf-border2:  #252525;
+
+  --sf-text1: #ffffff;
+  --sf-text2: #cccccc;
+  --sf-text3: #888888;
+  --sf-text4: #666666;
+  --sf-text5: #555555;
+  --sf-text6: #444444;
+  --sf-text7: #333333;
+  --sf-text8: #2a2a2a;
+
+  --sf-shadow:  rgba(0, 0, 0, 0.5);
+  --sf-overlay: rgba(0, 0, 0, 0.75);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --sf-bg-deep:  #e0e0e3;
+  --sf-bg:       #f0f0f2;
+  --sf-surface:  #ffffff;
+  --sf-surface2: #f4f4f6;
+  --sf-surface3: #f8f8fa;
+  --sf-input:    #ebebed;
+  --sf-pill:     #e5e5e8;
+  --sf-border:   #e0e0e3;
+  --sf-border2:  #d0d0d4;
+
+  --sf-text1: #0a0a0a;
+  --sf-text2: #2a2a2a;
+  --sf-text3: #606060;
+  --sf-text4: #808080;
+  --sf-text5: #909090;
+  --sf-text6: #a0a0a0;
+  --sf-text7: #b8b8b8;
+  --sf-text8: #cacaca;
+
+  --sf-shadow:  rgba(0, 0, 0, 0.08);
+  --sf-overlay: rgba(0, 0, 0, 0.5);
+
+  color-scheme: light;
+}
+
+/* Tailwind text-white override for light mode */
+[data-theme="light"] .text-white {
+  color: var(--sf-text1);
+}
