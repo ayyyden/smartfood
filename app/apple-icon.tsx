@@ -1,20 +1,15 @@
 import { ImageResponse } from "next/og";
 
-export const size         = { width: 180, height: 180 };
-export const contentType  = "image/png";
+export const size        = { width: 180, height: 180 };
+export const contentType = "image/png";
 
 export default function AppleIcon() {
   const s   = 180;
-  const pw  = Math.round(s * 0.13);
-  const ph  = Math.round(s * 0.42);
-  const cw  = Math.round(s * 0.075);
-  const ch  = Math.round(s * 0.26);
-  const bw  = Math.round(s * 0.30);
-  const bh  = Math.round(s * 0.075);
-  const g   = Math.round(s * 0.065);
-  const hg  = Math.round(g * 0.5);
+  const pw  = 23,  ph  = 75;
+  const cw  = 13,  ch  = 47;
+  const bw  = 54,  bh  = 13;
+  const g   = 11,  hg  = 5;
   const C   = "#00d2ff";
-  const glow = `0 0 ${Math.round(s * 0.18)}px rgba(0,210,255,0.8)`;
 
   return new ImageResponse(
     <div
@@ -29,15 +24,15 @@ export default function AppleIcon() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ width: pw, height: ph, background: C, borderRadius: pw / 2, boxShadow: glow }} />
+        <div style={{ width: pw, height: ph, background: C, borderRadius: 11 }} />
         <div style={{ width: g }} />
-        <div style={{ width: cw, height: ch, background: C, borderRadius: cw / 2, boxShadow: glow }} />
+        <div style={{ width: cw, height: ch, background: C, borderRadius: 6 }} />
         <div style={{ width: hg }} />
-        <div style={{ width: bw, height: bh, background: C, borderRadius: bh / 2, boxShadow: glow }} />
+        <div style={{ width: bw, height: bh, background: C, borderRadius: 6 }} />
         <div style={{ width: hg }} />
-        <div style={{ width: cw, height: ch, background: C, borderRadius: cw / 2, boxShadow: glow }} />
+        <div style={{ width: cw, height: ch, background: C, borderRadius: 6 }} />
         <div style={{ width: g }} />
-        <div style={{ width: pw, height: ph, background: C, borderRadius: pw / 2, boxShadow: glow }} />
+        <div style={{ width: pw, height: ph, background: C, borderRadius: 11 }} />
       </div>
     </div>,
     { width: s, height: s }
