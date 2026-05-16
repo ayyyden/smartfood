@@ -70,6 +70,18 @@ create table public.custom_foods (
   updated_at        timestamptz default now()
 );
 
+-- ─── Role privileges ─────────────────────────────────────────────────────────
+-- RLS policies filter which rows each user can see, but they do NOT grant
+-- table-level access. Without explicit GRANTs the authenticated role gets
+-- "permission denied for table …" (code 42501) even when RLS would pass.
+
+grant usage on schema public to authenticated;
+
+grant select, insert, update, delete on public.profiles     to authenticated;
+grant select, insert, update, delete on public.food_entries to authenticated;
+grant select, insert, update, delete on public.weight_logs  to authenticated;
+grant select, insert, update, delete on public.custom_foods to authenticated;
+
 -- ─── Row Level Security ───────────────────────────────────────────────────────
 
 alter table public.profiles    enable row level security;
