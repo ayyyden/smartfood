@@ -36,6 +36,11 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Callback exchanges the email-confirmation code for a session — always public
+  if (pathname === "/auth/callback") {
+    return supabaseResponse;
+  }
+
   if (pathname === "/onboarding") {
     if (!user) return NextResponse.redirect(new URL("/auth", request.url));
     return supabaseResponse;

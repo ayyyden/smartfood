@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DumbbellLogo from "@/components/DumbbellLogo";
-import { isOnboardingComplete } from "@/lib/db/profiles";
 
 type Mode = "login" | "signup";
 
@@ -46,17 +44,111 @@ function friendlyAuthError(msg: string): string {
       "or env vars were added to Vercel but the app wasn't redeployed after."
     );
   }
+  if (m.includes("expired") || m.includes("invalid") || m.includes("token")) {
+    return "This confirmation link has expired or is no longer valid. Please sign up again to get a new link.";
+  }
   return msg;
 }
 
+// ── Success screen shown after signup ────────────────────────────────────────
+
+function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void }) {
+  return (
+    <div
+      className="flex min-h-screen flex-col items-center justify-center px-5 py-10"
+      style={{ backgroundColor: "#0a0a0a" }}
+    >
+      <div className="w-full max-w-[380px] space-y-8">
+        <div className="flex flex-col items-center gap-4">
+          <DumbbellLogo size={52} glow={0.5} />
+        </div>
+
+        {/* Envelope icon */}
+        <div className="flex flex-col items-center gap-4">
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded-full"
+            style={{ backgroundColor: "rgba(0,210,255,0.1)", border: "1px solid rgba(0,210,255,0.2)" }}
+          >
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+            </svg>
+          </div>
+
+          <div className="text-center space-y-1">
+            <p className="text-[24px] font-black tracking-tight" style={{ color: "#ffffff" }}>
+              Check your email
+            </p>
+            <p className="text-sm" style={{ color: "#666666" }}>
+              We sent a confirmation link to
+            </p>
+            <p className="text-sm font-bold" style={{ color: "#00d2ff" }}>
+              {email}
+            </p>
+          </div>
+        </div>
+
+        {/* Steps */}
+        <div
+          className="rounded-2xl p-5 space-y-3"
+          style={{ backgroundColor: "#141414", border: "1px solid #252525" }}
+        >
+          {[
+            "Open the email from Smartfood",
+            'Click "Confirm your email"',
+            "You\'ll be taken directly to account setup",
+          ].map((step, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <span
+                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black"
+                style={{ backgroundColor: "rgba(0,210,255,0.15)", color: "#00d2ff" }}
+              >
+                {i + 1}
+              </span>
+              <p className="text-sm leading-snug" style={{ color: "#aaaaaa" }}>
+                {step}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-center text-xs" style={{ color: "#444444" }}>
+          Didn&apos;t receive it? Check your spam folder, or{" "}
+          <button
+            onClick={onBack}
+            className="underline"
+            style={{ color: "#555555" }}
+          >
+            go back and try again
+          </button>
+          .
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Main auth page ────────────────────────────────────────────────────────────
+
 export default function AuthPage() {
-  const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [signupSent, setSignupSent] = useState(false);
+
+  // Pick up ?error= dropped by /auth/callback when a link is expired/invalid
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cbError = params.get("error");
+    if (cbError) {
+      setError(friendlyAuthError(decodeURIComponent(cbError)));
+      // Clean the URL so the param doesn't persist on refresh
+      window.history.replaceState({}, "", "/auth");
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,7 +169,12 @@ export default function AuthPage() {
       const supabase = createClient();
 
       if (mode === "signup") {
-        const { data, error: authError } = await supabase.auth.signUp({ email, password });
+        const emailRedirectTo = `${window.location.origin}/auth/callback`;
+        const { error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo },
+        });
         if (authError) {
           console.error("[Auth] signUp error code:", authError.code);
           console.error("[Auth] signUp error message:", authError.message);
@@ -85,8 +182,8 @@ export default function AuthPage() {
           setError(friendlyAuthError(authError.message));
           return;
         }
-        console.log("[Auth] signUp success, user:", data.user?.id);
-        if (data.user) router.push("/onboarding");
+        // Show the "check your email" success screen
+        setSignupSent(true);
       } else {
         const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) {
@@ -97,8 +194,12 @@ export default function AuthPage() {
           return;
         }
         if (data.user) {
-          const done = await isOnboardingComplete(data.user.id);
-          router.push(done ? "/" : "/onboarding");
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("onboarding_completed")
+            .eq("user_id", data.user.id)
+            .single();
+          window.location.href = profile?.onboarding_completed ? "/" : "/onboarding";
         }
       }
     } catch (err: unknown) {
@@ -106,7 +207,6 @@ export default function AuthPage() {
       if (process.env.NODE_ENV === "development") {
         console.error("[Auth] full error:", JSON.stringify(err, null, 2));
       }
-
       if (err instanceof Error && err.message === "SUPABASE_NOT_CONFIGURED") {
         setError("Supabase is not connected. Check environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY).");
       } else {
@@ -115,6 +215,11 @@ export default function AuthPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Show success screen after signup
+  if (signupSent) {
+    return <SignupSentScreen email={email} onBack={() => setSignupSent(false)} />;
   }
 
   const inputStyle: React.CSSProperties = {
