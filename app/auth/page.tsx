@@ -31,23 +31,53 @@ export default function AuthPage() {
     }
 
     setLoading(true);
-    const supabase = createClient();
 
-    if (mode === "signup") {
-      const { data, error: authError } = await supabase.auth.signUp({ email, password });
-      if (authError) { setError(authError.message); setLoading(false); return; }
-      if (data.user) {
-        router.push("/onboarding");
+    try {
+      const supabase = createClient();
+
+      if (mode === "signup") {
+        const { data, error: authError } = await supabase.auth.signUp({ email, password });
+        // Log the full error object so it appears in Vercel function logs
+        if (authError) {
+          console.error("[Auth] signUp error:", JSON.stringify(authError));
+          setError(authError.message);
+          return;
+        }
+        if (data.user) router.push("/onboarding");
+      } else {
+        const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        if (authError) {
+          console.error("[Auth] signInWithPassword error:", JSON.stringify(authError));
+          setError(authError.message);
+          return;
+        }
+        if (data.user) {
+          const done = await isOnboardingComplete(data.user.id);
+          router.push(done ? "/" : "/onboarding");
+        }
       }
-    } else {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-      if (authError) { setError(authError.message); setLoading(false); return; }
-      if (data.user) {
-        const done = await isOnboardingComplete(data.user.id);
-        router.push(done ? "/" : "/onboarding");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[Auth] Unexpected throw:", msg);
+
+      if (msg === "SUPABASE_NOT_CONFIGURED") {
+        setError("Supabase is not connected. Check environment variables.");
+      } else if (
+        msg.includes("Load failed") ||
+        msg.includes("Failed to fetch") ||
+        msg.includes("NetworkError") ||
+        msg.toLowerCase().includes("network")
+      ) {
+        setError(
+          "Network error — cannot reach Supabase. " +
+          "Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in Vercel."
+        );
+      } else {
+        setError(msg || "Something went wrong. Please try again.");
       }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const inputStyle: React.CSSProperties = {
