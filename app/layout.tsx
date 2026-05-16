@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   title: "Smartfood",
   description: "Smart calorie tracking, naturally",
   metadataBase: new URL("https://smartfood-eight.vercel.app"),
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     title: "Smartfood",
     description: "Smart calorie tracking, naturally",
@@ -21,7 +28,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Smartfood — Smart calorie tracking, naturally",
@@ -32,6 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Smartfood",
     description: "Smart calorie tracking, naturally",
+    images: ["/og-image.png"],
   },
   appleWebApp: {
     capable: true,
