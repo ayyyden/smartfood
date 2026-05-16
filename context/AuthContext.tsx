@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -28,11 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const prevUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      prevUserIdRef.current = session?.user?.id ?? null;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -41,6 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      const newUserId = session?.user?.id ?? null;
+      // Different account logged in — clear user-specific localStorage so the
+      // new user gets fresh defaults (e.g. "smart" mode, not the previous user's "pro")
+      if (prevUserIdRef.current && newUserId !== prevUserIdRef.current) {
+        localStorage.removeItem("smartfood_mode");
+      }
+      prevUserIdRef.current = newUserId;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -50,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signOut() {
+    localStorage.removeItem("smartfood_mode");
     const supabase = createClient();
     await supabase.auth.signOut();
   }

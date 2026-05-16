@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { upsertProfile } from "@/lib/db/profiles";
@@ -97,13 +97,13 @@ function NumInput({ value, onChange, placeholder, unit }: {
         onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
         onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
       />
-      {unit && <span className="text-sm w-8 shrink-0" style={{ color: "#555555" }}>{unit}</span>}
+      {unit && <span className="text-sm w-8 shrink-0" style={{ color: "#888888" }}>{unit}</span>}
     </div>
   );
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "#444444" }}>{children}</p>;
+  return <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "#888888" }}>{children}</p>;
 }
 
 const GENDER_OPTS   = [{ value: "male", label: "Male" }, { value: "female", label: "Female" }];
@@ -158,10 +158,17 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [profile, setProfile] = useState<Profile>({ ...DEFAULT_PROFILE });
+  // String states so the user can clear and retype without getting stuck at 0
+  const [calInput, setCalInput] = useState(String(DEFAULT_PROFILE.calorieGoal));
+  const [proteinInput, setProteinInput] = useState(String(DEFAULT_PROFILE.proteinGoalG));
 
   const isImperial  = profile.unitSystem === "imperial";
   const rec         = calculateRecommended(profile);
   const age         = calculateAge(profile.dateOfBirth);
+
+  // Keep string inputs in sync when profile recalculates (e.g. user picks a new goal)
+  useEffect(() => { setCalInput(String(profile.calorieGoal)); }, [profile.calorieGoal]);
+  useEffect(() => { setProteinInput(String(profile.proteinGoalG)); }, [profile.proteinGoalG]);
 
   const dispHeight  = profile.heightCm    === "" ? "" : isImperial ? cmToIn(profile.heightCm)    : profile.heightCm;
   const dispWeight  = profile.weightKg    === "" ? "" : isImperial ? kgToLb(profile.weightKg)    : profile.weightKg;
@@ -220,7 +227,7 @@ export default function OnboardingPage() {
             style={{ width: `${pct}%`, backgroundColor: "#00d2ff", boxShadow: "0 0 8px rgba(0,210,255,0.5)" }}
           />
         </div>
-        <p className="mt-2 text-xs" style={{ color: "#444444" }}>Step {step} of {TOTAL_STEPS}</p>
+        <p className="mt-2 text-xs" style={{ color: "#888888" }}>Step {step} of {TOTAL_STEPS}</p>
       </div>
 
       {/* Content */}
@@ -231,7 +238,7 @@ export default function OnboardingPage() {
           <>
             <div>
               <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Tell us about yourself</p>
-              <p className="mt-1 text-sm" style={{ color: "#444444" }}>We use this to personalize your goals</p>
+              <p className="mt-1 text-sm" style={{ color: "#888888" }}>We use this to personalize your goals</p>
             </div>
 
             <div className="space-y-4">
@@ -246,7 +253,7 @@ export default function OnboardingPage() {
                   onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
                 />
-                {age && <p className="mt-1.5 text-xs" style={{ color: "#444444" }}>Age: <span style={{ color: "#00d2ff" }}>{age}</span></p>}
+                {age && <p className="mt-1.5 text-xs" style={{ color: "#888888" }}>Age: <span style={{ color: "#00d2ff" }}>{age}</span></p>}
               </div>
 
               <div>
@@ -262,7 +269,7 @@ export default function OnboardingPage() {
           <>
             <div>
               <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Your body</p>
-              <p className="mt-1 text-sm" style={{ color: "#444444" }}>We'll calculate your calorie needs</p>
+              <p className="mt-1 text-sm" style={{ color: "#888888" }}>We'll calculate your calorie needs</p>
             </div>
 
             <div className="space-y-4">
@@ -312,7 +319,7 @@ export default function OnboardingPage() {
           <>
             <div>
               <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Your goal</p>
-              <p className="mt-1 text-sm" style={{ color: "#444444" }}>What are you working toward?</p>
+              <p className="mt-1 text-sm" style={{ color: "#888888" }}>What are you working toward?</p>
             </div>
 
             <div className="space-y-4">
@@ -326,7 +333,7 @@ export default function OnboardingPage() {
                 <PillGroup options={ACTIVITY_OPTS} value={profile.activityLevel}
                   onChange={(v) => update({ activityLevel: v as ActivityLevel })} />
                 {profile.activityLevel && (
-                  <p className="mt-2 text-xs" style={{ color: "#444444" }}>
+                  <p className="mt-2 text-xs" style={{ color: "#888888" }}>
                     {ACTIVITY_DESC[profile.activityLevel]}
                   </p>
                 )}
@@ -340,7 +347,7 @@ export default function OnboardingPage() {
           <>
             <div>
               <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Your targets</p>
-              <p className="mt-1 text-sm" style={{ color: "#444444" }}>Based on your stats. You can override anytime.</p>
+              <p className="mt-1 text-sm" style={{ color: "#888888" }}>Based on your stats. You can override anytime.</p>
             </div>
 
             <div className="space-y-4">
@@ -349,18 +356,18 @@ export default function OnboardingPage() {
                 {rec ? (
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#444444" }}>Recommended</p>
+                      <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#888888" }}>Recommended</p>
                       <p className="mt-0.5 text-2xl font-black" style={{ color: "#00d2ff" }}>
                         {rec.calories.toLocaleString()}
-                        <span className="ml-1 text-sm font-normal" style={{ color: "#555555" }}>cal/day</span>
+                        <span className="ml-1 text-sm font-normal" style={{ color: "#888888" }}>cal/day</span>
                       </p>
                     </div>
-                    <p className="text-right text-xs leading-snug" style={{ color: "#444444" }}>
+                    <p className="text-right text-xs leading-snug" style={{ color: "#888888" }}>
                       Based on your<br />stats &amp; goal
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm" style={{ color: "#555555" }}>
+                  <p className="text-sm" style={{ color: "#888888" }}>
                     Complete your stats in steps 1–3 to see a recommendation.
                   </p>
                 )}
@@ -373,18 +380,18 @@ export default function OnboardingPage() {
                     type="number"
                     min={800}
                     max={8000}
-                    value={profile.calorieGoal}
-                    onChange={(e) => {
-                      const cal = Number(e.target.value);
+                    value={calInput}
+                    onChange={(e) => setCalInput(e.target.value)}
+                    onBlur={() => {
+                      const cal = Math.max(800, Number(calInput) || profile.calorieGoal);
                       const overridden = rec ? cal !== rec.calories : true;
                       const m = deriveMacros(cal, profile.goal);
                       setProfile((p) => ({ ...p, calorieGoal: cal, calorieOverridden: overridden, carbsGoalG: m.carbs, fatGoalG: m.fat }));
                     }}
                     style={{ ...inputStyle, flex: 1, color: "#00d2ff", fontWeight: 800 }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
                   />
-                  <span className="text-sm" style={{ color: "#555555" }}>cal</span>
+                  <span className="text-sm" style={{ color: "#888888" }}>cal</span>
                 </div>
               </div>
 
@@ -394,15 +401,18 @@ export default function OnboardingPage() {
                   <input
                     type="number"
                     min={30}
-                    value={profile.proteinGoalG}
-                    onChange={(e) => setProfile((p) => ({ ...p, proteinGoalG: Number(e.target.value) }))}
+                    value={proteinInput}
+                    onChange={(e) => setProteinInput(e.target.value)}
+                    onBlur={() => {
+                      const protein = Math.max(30, Number(proteinInput) || profile.proteinGoalG);
+                      setProfile((p) => ({ ...p, proteinGoalG: protein }));
+                    }}
                     style={{ ...inputStyle, flex: 1 }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
                   />
-                  <span className="text-sm" style={{ color: "#555555" }}>g</span>
+                  <span className="text-sm" style={{ color: "#888888" }}>g</span>
                 </div>
-                {rec && <p className="mt-1.5 text-xs" style={{ color: "#444444" }}>Recommended: {rec.protein}g</p>}
+                {rec && <p className="mt-1.5 text-xs" style={{ color: "#888888" }}>Recommended: {rec.protein}g</p>}
               </div>
 
               {/* Weight rate estimate */}
@@ -438,7 +448,7 @@ export default function OnboardingPage() {
                         At {profile.calorieGoal.toLocaleString()} cal/day, you&apos;re approximately maintaining your weight.
                       </p>
                     )}
-                    <p className="text-xs" style={{ color: "#444444" }}>
+                    <p className="text-xs" style={{ color: "#888888" }}>
                       Estimate only — actual results vary by individual.
                     </p>
                   </div>
@@ -453,7 +463,7 @@ export default function OnboardingPage() {
           <>
             <div>
               <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Food preferences</p>
-              <p className="mt-1 text-sm" style={{ color: "#444444" }}>Helps the AI make better suggestions</p>
+              <p className="mt-1 text-sm" style={{ color: "#888888" }}>Helps the AI make better suggestions</p>
             </div>
 
             <div className="space-y-4">
@@ -529,7 +539,7 @@ export default function OnboardingPage() {
             type="button"
             onClick={() => setStep((s) => s - 1)}
             className="w-full rounded-2xl py-3 text-sm font-semibold"
-            style={{ color: "#444444" }}
+            style={{ color: "#888888" }}
           >
             Back
           </button>

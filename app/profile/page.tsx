@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import DumbbellLogo from "@/components/DumbbellLogo";
 import { fetchProfile, upsertProfile } from "@/lib/db/profiles";
 import {
   type Profile,
@@ -194,12 +195,14 @@ const DIET_LABEL: Record<string, string> = Object.fromEntries(
 
 export default function ProfilePage() {
   const { dispatch } = useApp();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profile, setProfile]               = useState<Profile>(DEFAULT_PROFILE);
   const [viewMode, setViewMode]             = useState<"form" | "summary">("form");
   const [hasExistingProfile, setHasExisting] = useState(false);
+  const [dataLoaded, setDataLoaded]         = useState(false);
 
   useEffect(() => {
+    if (authLoading) return; // wait for auth to resolve before fetching
     async function loadData() {
       let saved: Profile | null = null;
       if (user) {
@@ -211,9 +214,10 @@ export default function ProfilePage() {
         setViewMode("summary");
         setHasExisting(true);
       }
+      setDataLoaded(true);
     }
     loadData();
-  }, [user]);
+  }, [user, authLoading]);
 
   const isImperial    = profile.unitSystem === "imperial";
   const recommendation = calculateRecommended(profile);
@@ -300,6 +304,16 @@ export default function ProfilePage() {
     profile.calorieOverridden &&
     recommendation !== null &&
     profile.calorieGoal !== recommendation.calories;
+
+  // ── Loading state — never flash the empty form before data arrives ────────
+  if (!dataLoaded) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4">
+        <DumbbellLogo size={32} glow={0.3} />
+        <p className="text-sm" style={{ color: "var(--sf-text5)" }}>Loading profile…</p>
+      </div>
+    );
+  }
 
   // ── Summary / Account view ────────────────────────────────────────────────
   if (viewMode === "summary") {

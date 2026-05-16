@@ -252,7 +252,7 @@ export default function AuthPage() {
             <p className="text-[28px] font-black tracking-tight" style={{ color: "#ffffff" }}>
               Smartfood
             </p>
-            <p className="mt-1 text-sm" style={{ color: "#555555" }}>
+            <p className="mt-1 text-sm" style={{ color: "#888888" }}>
               {mode === "login" ? "Sign in to continue" : "Create your account"}
             </p>
           </div>
@@ -359,7 +359,7 @@ export default function AuthPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs" style={{ color: "#333333" }}>
+        <p className="text-center text-xs" style={{ color: "#666666" }}>
           Your data is private and encrypted.
         </p>
       </div>
