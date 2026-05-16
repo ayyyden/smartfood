@@ -49,5 +49,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  // Only run on app routes — skip Next.js internals, API routes, and any
+  // public static file (by extension or well-known filename).
+  matcher: [
+    "/((?!_next/static|_next/image|api/|.*\\.(?:png|jpg|jpeg|webp|svg|ico|gif|css|js|json|txt|xml|woff2?|ttf|otf|map)).+)",
+  ],
 };
