@@ -8,6 +8,32 @@ import { isOnboardingComplete } from "@/lib/db/profiles";
 
 type Mode = "login" | "signup";
 
+// Inlined at build time — tells us what Vercel actually baked in
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
+// Show debug panel on local dev or Vercel preview, never on production
+const SHOW_DEBUG =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_VERCEL_ENV === "preview";
+
+function getUrlHost(url: string): string {
+  if (!url) return "(not set)";
+  try { return new URL(url).hostname; } catch { return "(invalid URL format)"; }
+}
+
+function friendlyAuthError(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes("networkerror") || m.includes("failed to fetch") || m.includes("load failed") || m.includes("fetch")) {
+    return (
+      "Cannot reach Supabase — network request failed. " +
+      "Likely causes: Supabase project is paused (resume it at supabase.com/dashboard), " +
+      "or env vars were added to Vercel but the app wasn't redeployed after."
+    );
+  }
+  return msg;
+}
+
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
@@ -37,18 +63,22 @@ export default function AuthPage() {
 
       if (mode === "signup") {
         const { data, error: authError } = await supabase.auth.signUp({ email, password });
-        // Log the full error object so it appears in Vercel function logs
         if (authError) {
-          console.error("[Auth] signUp error:", JSON.stringify(authError));
-          setError(authError.message);
+          console.error("[Auth] signUp error code:", authError.code);
+          console.error("[Auth] signUp error message:", authError.message);
+          console.error("[Auth] signUp error status:", authError.status);
+          setError(friendlyAuthError(authError.message));
           return;
         }
+        console.log("[Auth] signUp success, user:", data.user?.id);
         if (data.user) router.push("/onboarding");
       } else {
         const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) {
-          console.error("[Auth] signInWithPassword error:", JSON.stringify(authError));
-          setError(authError.message);
+          console.error("[Auth] signIn error code:", authError.code);
+          console.error("[Auth] signIn error message:", authError.message);
+          console.error("[Auth] signIn error status:", authError.status);
+          setError(friendlyAuthError(authError.message));
           return;
         }
         if (data.user) {
@@ -61,19 +91,9 @@ export default function AuthPage() {
       console.error("[Auth] Unexpected throw:", msg);
 
       if (msg === "SUPABASE_NOT_CONFIGURED") {
-        setError("Supabase is not connected. Check environment variables.");
-      } else if (
-        msg.includes("Load failed") ||
-        msg.includes("Failed to fetch") ||
-        msg.includes("NetworkError") ||
-        msg.toLowerCase().includes("network")
-      ) {
-        setError(
-          "Network error — cannot reach Supabase. " +
-          "Verify NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in Vercel."
-        );
+        setError("Supabase is not connected. Check environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY).");
       } else {
-        setError(msg || "Something went wrong. Please try again.");
+        setError(friendlyAuthError(msg) || "Something went wrong. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -110,6 +130,19 @@ export default function AuthPage() {
             </p>
           </div>
         </div>
+
+        {/* Debug panel — dev + preview only, never production */}
+        {SHOW_DEBUG && (
+          <div
+            className="rounded-xl px-4 py-3 text-xs space-y-1 font-mono"
+            style={{ backgroundColor: "#0d1a1f", border: "1px solid #1a3a44", color: "#4a9eb5" }}
+          >
+            <div style={{ color: "#888888", marginBottom: 4 }}>⚙ Supabase debug (non-production only)</div>
+            <div>URL set: <span style={{ color: SUPABASE_URL ? "#00d2ff" : "#ff6060" }}>{SUPABASE_URL ? "yes" : "NO"}</span></div>
+            {SUPABASE_URL && <div>URL host: <span style={{ color: "#ffffff" }}>{getUrlHost(SUPABASE_URL)}</span></div>}
+            <div>Anon key set: <span style={{ color: SUPABASE_KEY ? "#00d2ff" : "#ff6060" }}>{SUPABASE_KEY ? "yes" : "NO"}</span></div>
+          </div>
+        )}
 
         {/* Mode toggle */}
         <div
