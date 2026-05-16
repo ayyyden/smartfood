@@ -170,7 +170,7 @@ export default function AuthPage() {
 
       if (mode === "signup") {
         const emailRedirectTo = `${window.location.origin}/auth/callback`;
-        const { error: authError } = await supabase.auth.signUp({
+        const { data: signUpData, error: authError } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo },
@@ -182,8 +182,13 @@ export default function AuthPage() {
           setError(friendlyAuthError(authError.message));
           return;
         }
-        // Show the "check your email" success screen
-        setSignupSent(true);
+        // Email confirmation OFF → session returned immediately → go straight to onboarding
+        // Email confirmation ON  → no session yet → show "check your email" screen
+        if (signUpData.session) {
+          window.location.href = "/onboarding";
+        } else {
+          setSignupSent(true);
+        }
       } else {
         const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) {
