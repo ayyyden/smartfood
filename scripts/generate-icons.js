@@ -15,35 +15,19 @@ fs.mkdirSync(OUT, { recursive: true });
 const C  = "#00d2ff";
 const BG = "#0a0a0a";
 
-// ─── Small icon SVG (16 / 32 px) ─────────────────────────────────────────────
-// At tiny sizes, skip the collar and use thick explicit pixel values so the
-// shape is still recognisable at 16×16 in a browser tab.
-function smallDumbbellSvg(size) {
-  if (size === 16) {
-    // left plate | bar | right plate — NO collar
-    // x: 2 + 3 + 6 + 3 + 2 = 16 ✓  y: plate=(2..14) bar=(7..9)
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
-  <rect width="16" height="16" fill="${BG}" rx="3"/>
-  <rect x="2"  y="2"  width="3" height="12" rx="1" fill="${C}"/>
-  <rect x="5"  y="7"  width="6" height="2"  rx="1" fill="${C}"/>
-  <rect x="11" y="2"  width="3" height="12" rx="1" fill="${C}"/>
+// ─── "SF" favicon SVG ────────────────────────────────────────────────────────
+// Rendered at 64×64 so sharp can scale it down cleanly to 16 or 32.
+// Bold "SF" on dark background — readable at any favicon size.
+// y=48 baseline centres the cap-height (≈0.73×44=32px) in the 64px box.
+function sfFaviconSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64">
+  <rect width="64" height="64" fill="${BG}" rx="10"/>
+  <text x="32" y="48"
+        text-anchor="middle"
+        font-family="Arial Black, Impact, Arial, sans-serif"
+        font-size="44" font-weight="900"
+        fill="${C}">SF</text>
 </svg>`;
-  }
-
-  if (size === 32) {
-    // left plate | collar | bar | collar | right plate
-    // x: 2+5+3+12+3+5+2 = 32 ✓  heights centred in 32
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-  <rect width="32" height="32" fill="${BG}" rx="6"/>
-  <rect x="2"  y="4"  width="5"  height="24" rx="2" fill="${C}"/>
-  <rect x="7"  y="9"  width="3"  height="14" rx="1" fill="${C}"/>
-  <rect x="10" y="14" width="12" height="4"  rx="1" fill="${C}"/>
-  <rect x="22" y="9"  width="3"  height="14" rx="1" fill="${C}"/>
-  <rect x="25" y="4"  width="5"  height="24" rx="2" fill="${C}"/>
-</svg>`;
-  }
-
-  throw new Error(`smallDumbbellSvg only handles 16 or 32, got ${size}`);
 }
 
 // ─── Large icon SVG (192 / 512 / 180 px) ─────────────────────────────────────
@@ -160,24 +144,26 @@ async function savePng(svgStr, w, h, filename) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 (async () => {
-  // favicon.ico — 16×16 + 32×32 embedded PNGs
-  const png16 = await svgToPngBuffer(smallDumbbellSvg(16), 16, 16);
-  const png32 = await svgToPngBuffer(smallDumbbellSvg(32), 32, 32);
+  // favicon.ico — "SF" at 16×16 and 32×32 (rendered from 64×64 SVG)
+  const sfSvg = sfFaviconSvg();
+  const png16 = await sharp(Buffer.from(sfSvg)).resize(16, 16).png().toBuffer();
+  const png32 = await sharp(Buffer.from(sfSvg)).resize(32, 32).png().toBuffer();
   fs.writeFileSync(path.join(OUT, "favicon.ico"), buildIco([
     { buf: png16, width: 16, height: 16 },
     { buf: png32, width: 32, height: 32 },
   ]));
   console.log("✓ favicon.ico");
 
-  // favicon.png — 32×32 bold version
-  await savePng(smallDumbbellSvg(32), 32, 32, "favicon.png");
+  // favicon.png — "SF" at 32×32
+  fs.writeFileSync(path.join(OUT, "favicon.png"), png32);
+  console.log("✓ favicon.png");
 
-  // app icons
+  // app icons — dumbbell (unchanged)
   await savePng(largeDumbbellSvg(192, 192), 192, 192, "icon-192.png");
   await savePng(largeDumbbellSvg(512, 512), 512, 512, "icon-512.png");
   await savePng(largeDumbbellSvg(180, 180), 180, 180, "apple-touch-icon.png");
 
-  // OG image
+  // OG image — dumbbell (unchanged)
   await savePng(ogSvg(1200, 630), 1200, 630, "og-image.png");
 
   console.log("\nAll icons generated in /public");
