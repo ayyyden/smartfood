@@ -12,6 +12,32 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "Smartfood",
   description: "Smart calorie tracking, naturally",
+  metadataBase: new URL("https://smartfood-eight.vercel.app"),
+  openGraph: {
+    title: "Smartfood",
+    description: "Smart calorie tracking, naturally",
+    url: "https://smartfood-eight.vercel.app",
+    siteName: "Smartfood",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Smartfood — Smart calorie tracking, naturally",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Smartfood",
+    description: "Smart calorie tracking, naturally",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Smartfood",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
