@@ -1,5 +1,5 @@
 import Link from "next/link";
-import SmartfoodLogo from "@/components/SmartfoodLogo";
+import DumbbellLogo from "@/components/DumbbellLogo";
 
 export default function TopNav() {
   return (
@@ -8,7 +8,7 @@ export default function TopNav() {
       style={{ backgroundColor: "#0a0a0a", borderBottom: "1px solid #1a1a1a" }}
     >
       <div className="flex items-center gap-2">
-        <SmartfoodLogo size={24} />
+        <DumbbellLogo size={28} />
         <span className="text-[17px] font-black tracking-tight" style={{ color: "#ffffff" }}>
           Smartfood
         </span>

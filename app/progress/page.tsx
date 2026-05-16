@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { loadProfile, DEFAULT_PROFILE } from "@/lib/profile";
 import type { Profile } from "@/lib/profile";
 import {
-  loadWeightLogs,
-  saveWeightLogs,
   createWeightLog,
   kgToLb,
   lbToKg,
   type WeightLog,
 } from "@/lib/weightLogs";
+import { useAuth } from "@/context/AuthContext";
+import { fetchWeightLogs, insertWeightLog, updateWeightLog, deleteWeightLog } from "@/lib/db/weight-logs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -112,19 +112,21 @@ function EditRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProgressPage() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [logs, setLogs]       = useState<WeightLog[]>([]);
   const [editingId, setEditingId]   = useState<string | null>(null);
   const [editWeight, setEditWeight] = useState("");
   const [logWeight, setLogWeight]   = useState("");
-  const [logDate, setLogDate]       = useState("");   // empty until client mount
+  const [logDate, setLogDate]       = useState("");
 
   useEffect(() => {
     setProfile(loadProfile());
-    const loaded = loadWeightLogs();
-    setLogs(loaded.sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1)));
     setLogDate(todayStr());
-  }, []);
+    if (user) {
+      fetchWeightLogs(user.id).then((loaded) => setLogs(loaded));
+    }
+  }, [user]);
 
   const isImperial    = profile.unitSystem === "imperial";
   const unit          = isImperial ? "lb" : "kg";
@@ -168,7 +170,8 @@ export default function ProgressPage() {
     return isImperial ? `${kgToLb(kg)} lb` : `${kg.toFixed(1)} kg`;
   }
 
-  function handleLog() {
+  async function handleLog() {
+    if (!user) return;
     const raw = parseFloat(logWeight);
     if (!raw || raw <= 0) return;
     const wKg = isImperial ? lbToKg(raw) : Math.round(raw * 10) / 10;
@@ -177,14 +180,13 @@ export default function ProgressPage() {
       a.date + a.time < b.date + b.time ? 1 : -1,
     );
     setLogs(updated);
-    saveWeightLogs(updated);
     setLogWeight("");
+    await insertWeightLog(user.id, entry);
   }
 
-  function handleDelete(id: string) {
-    const updated = logs.filter((l) => l.id !== id);
-    setLogs(updated);
-    saveWeightLogs(updated);
+  async function handleDelete(id: string) {
+    setLogs((prev) => prev.filter((l) => l.id !== id));
+    await deleteWeightLog(id);
   }
 
   function startEdit(log: WeightLog) {
@@ -192,14 +194,14 @@ export default function ProgressPage() {
     setEditWeight(String(isImperial ? kgToLb(log.weight) : log.weight));
   }
 
-  function handleEditSave(log: WeightLog) {
+  async function handleEditSave(log: WeightLog) {
     const raw = parseFloat(editWeight);
     if (!raw || raw <= 0) return;
     const wKg = isImperial ? lbToKg(raw) : Math.round(raw * 10) / 10;
     const updated = logs.map((l) => l.id === log.id ? { ...l, weight: wKg } : l);
     setLogs(updated);
-    saveWeightLogs(updated);
     setEditingId(null);
+    await updateWeightLog({ ...log, weight: wKg });
   }
 
   const canLog = logWeight.trim() !== "" && parseFloat(logWeight) > 0;

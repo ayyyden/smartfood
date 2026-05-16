@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
+import { fetchProfile, upsertProfile } from "@/lib/db/profiles";
 import {
   type Profile,
   type Gender,
@@ -192,18 +194,26 @@ const DIET_LABEL: Record<string, string> = Object.fromEntries(
 
 export default function ProfilePage() {
   const { dispatch } = useApp();
+  const { user } = useAuth();
   const [profile, setProfile]               = useState<Profile>(DEFAULT_PROFILE);
   const [viewMode, setViewMode]             = useState<"form" | "summary">("form");
   const [hasExistingProfile, setHasExisting] = useState(false);
 
   useEffect(() => {
-    const saved = loadProfile();
-    setProfile(saved);
-    if (saved.dateOfBirth) {
-      setViewMode("summary");
-      setHasExisting(true);
+    async function loadData() {
+      let saved: Profile | null = null;
+      if (user) {
+        saved = await fetchProfile(user.id);
+      }
+      if (!saved) saved = loadProfile();
+      setProfile(saved);
+      if (saved.dateOfBirth || saved.onboardingCompleted) {
+        setViewMode("summary");
+        setHasExisting(true);
+      }
     }
-  }, []);
+    loadData();
+  }, [user]);
 
   const isImperial    = profile.unitSystem === "imperial";
   const recommendation = calculateRecommended(profile);
@@ -265,8 +275,11 @@ export default function ProfilePage() {
     updateProfile({ goalWeightKg: val === "" ? "" : isImperial ? lbToKg(val) : val });
   }
 
-  function handleSave() {
+  async function handleSave() {
     saveProfile(profile);
+    if (user) {
+      await upsertProfile(user.id, { ...profile, onboardingCompleted: true });
+    }
     dispatch({
       type: "SET_GOALS",
       payload: { calories: profile.calorieGoal, protein: profile.proteinGoalG, carbs: profile.carbsGoalG, fat: profile.fatGoalG },
@@ -275,8 +288,11 @@ export default function ProfilePage() {
     setViewMode("summary");
   }
 
-  function handleCancel() {
-    setProfile(loadProfile());
+  async function handleCancel() {
+    let saved: Profile | null = null;
+    if (user) saved = await fetchProfile(user.id);
+    if (!saved) saved = loadProfile();
+    setProfile(saved);
     setViewMode("summary");
   }
 

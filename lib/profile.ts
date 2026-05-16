@@ -28,6 +28,11 @@ export type Profile = {
 
   // Dietary restrictions (multi-select values)
   dietRules: string[];
+
+  // Extended profile (stored in Supabase)
+  foodPreferences?: string;
+  dislikedFoods?: string;
+  onboardingCompleted?: boolean;
 };
 
 // ─── Defaults ────────────────────────────────────────────────────────────────

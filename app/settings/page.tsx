@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 
 type TrackingMode = "smart" | "pro";
 const MODE_KEY = "smartfood_mode";
@@ -10,6 +11,7 @@ const MODE_KEY = "smartfood_mode";
 export default function SettingsPage() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const isDark = theme === "dark";
   const [mode, setMode] = useState<TrackingMode>("smart");
 
@@ -51,10 +53,25 @@ export default function SettingsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
 
-        {/* Debug — remove after confirming theme works */}
-        <p style={{ color: "var(--sf-text4)", fontSize: "11px", textAlign: "center" }}>
-          Theme: <strong style={{ color: "var(--sf-text2)" }}>{theme}</strong>
-        </p>
+        {/* Account */}
+        {user && (
+          <div
+            className="rounded-2xl px-5 py-5"
+            style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
+          >
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+              Account
+            </p>
+            <p className="mb-4 text-xs" style={{ color: "var(--sf-text5)" }}>{user.email}</p>
+            <button
+              onClick={async () => { await signOut(); router.push("/auth"); }}
+              className="w-full rounded-xl py-3 text-sm font-bold transition-all active:scale-95"
+              style={{ backgroundColor: "rgba(255,80,80,0.08)", color: "#ff6060", border: "1px solid rgba(255,80,80,0.18)" }}
+            >
+              Log out
+            </button>
+          </div>
+        )}
 
         {/* Tracking Mode */}
         <div

@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import TopNav from "@/components/TopNav";
-import BottomNav from "@/components/BottomNav";
+import NavWrapper from "@/components/NavWrapper";
 import Providers from "@/components/Providers";
 
 const geist = Geist({
@@ -57,9 +56,7 @@ export default function RootLayout({
           style={{ height: "100dvh", backgroundColor: "var(--sf-bg)" }}
         >
           <Providers>
-            <TopNav />
-            <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
-            <BottomNav />
+            <NavWrapper>{children}</NavWrapper>
           </Providers>
         </div>
       </body>
