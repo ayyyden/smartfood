@@ -126,3 +126,19 @@ export function toServings(food: CustomFood, amount: number, unit: LogUnit): num
 export function scaleMacro(valuePerServing: number, servings: number): number {
   return Math.round(valuePerServing * servings);
 }
+
+// ─── Built-in food favorites ──────────────────────────────────────────────────
+
+const BUILTIN_FAVORITES_KEY = "smartfood_builtin_favorites";
+
+export function loadBuiltinFavorites(): string[] {
+  try {
+    const raw = localStorage.getItem(BUILTIN_FAVORITES_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as string[];
+  } catch { return []; }
+}
+
+export function saveBuiltinFavorites(ids: string[]): void {
+  try { localStorage.setItem(BUILTIN_FAVORITES_KEY, JSON.stringify(ids)); } catch {}
+}

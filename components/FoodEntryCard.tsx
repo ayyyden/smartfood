@@ -20,10 +20,11 @@ const SOURCE_CONFIG: Record<
   NutritionSource,
   { label: string; color: string; bg: string }
 > = {
-  usda:   { label: "USDA",    color: "#00d2ff", bg: "rgba(0,210,255,0.08)"    },
-  ai:     { label: "AI est.", color: "#a78bfa", bg: "rgba(167,139,250,0.08)"  },
-  mock:   { label: "Mock",    color: "var(--sf-text5)", bg: "var(--sf-input)" },
-  manual: { label: "Manual",  color: "#fb923c", bg: "rgba(251,146,60,0.08)"   },
+  usda:     { label: "USDA",     color: "#00d2ff", bg: "rgba(0,210,255,0.08)"   },
+  ai:       { label: "AI est.",  color: "#a78bfa", bg: "rgba(167,139,250,0.08)" },
+  mock:     { label: "Mock",     color: "var(--sf-text5)", bg: "var(--sf-input)"},
+  manual:   { label: "Manual",   color: "#fb923c", bg: "rgba(251,146,60,0.08)"  },
+  built_in: { label: "Built-in", color: "#4ade80", bg: "rgba(74,222,128,0.08)"  },
 };
 
 function SourceBadge({ source }: { source?: NutritionSource }) {

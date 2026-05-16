@@ -1,4 +1,4 @@
-export type NutritionSource = "usda" | "ai" | "mock" | "manual";
+export type NutritionSource = "usda" | "ai" | "mock" | "manual" | "built_in";
 
 export type FoodItem = {
   name: string;

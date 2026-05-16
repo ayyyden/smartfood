@@ -13,10 +13,17 @@ import {
   defaultLogAmount,
   toServings,
   autoGramsPerServing,
+  loadBuiltinFavorites,
+  saveBuiltinFavorites,
   type CustomFood,
   type ServingUnit,
   type LogUnit,
 } from "@/lib/proFoods";
+import {
+  BUILT_IN_FOODS,
+  BUILT_IN_CATEGORIES,
+  type BuiltInFood,
+} from "@/lib/builtInFoods";
 
 // ─── Unit options ─────────────────────────────────────────────────────────────
 
@@ -615,6 +622,87 @@ function MyFoodsSheet({
 
 // ─── Meal builder sheet ───────────────────────────────────────────────────────
 
+type Tab     = "favorites" | "builtin" | "myfoods" | "all";
+type AnyFood = CustomFood | BuiltInFood;
+
+function isBI(f: AnyFood): f is BuiltInFood {
+  return "category" in f && (f as BuiltInFood).source === "built_in";
+}
+
+// BuiltInFood has all fields the helper functions need — cast is safe at runtime
+function asC(f: AnyFood): CustomFood { return f as unknown as CustomFood; }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function CatHeader({ title }: { title: string }) {
+  return (
+    <div className="px-5 pt-4 pb-1.5">
+      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+        {title}
+      </p>
+    </div>
+  );
+}
+
+function FoodRow({
+  food, isSelected, isFav, onToggle, onFavToggle,
+}: {
+  food: AnyFood; isSelected: boolean; isFav: boolean;
+  onToggle: () => void; onFavToggle?: () => void;
+}) {
+  return (
+    <div
+      className="flex items-center gap-2 px-5 py-3"
+      style={{
+        borderBottom: "1px solid var(--sf-border)",
+        backgroundColor: isSelected ? "rgba(0,210,255,0.04)" : "transparent",
+      }}
+    >
+      <button onClick={onToggle} className="flex-1 min-w-0 text-left">
+        <div className="flex items-center gap-1.5">
+          {isSelected && <span className="text-[11px]" style={{ color: "#00d2ff" }}>✓</span>}
+          <p
+            className="text-sm font-bold truncate"
+            style={{ color: isSelected ? "#00d2ff" : "var(--sf-text1)" }}
+          >
+            {food.name}
+          </p>
+          {isBI(food) && !onFavToggle && (
+            <span
+              className="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+              style={{ color: "#4ade80", backgroundColor: "rgba(74,222,128,0.08)" }}
+            >
+              Built-in
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 text-[11px]" style={{ color: "var(--sf-text5)" }}>
+          <span style={{ color: "#00d2ff" }}>{food.calories}</span> cal ·{" "}
+          P <span style={{ color: "#38bdf8" }}>{food.protein}g</span>{" · "}
+          C <span style={{ color: "#a78bfa" }}>{food.carbs}g</span>{" · "}
+          F <span style={{ color: "#fb7185" }}>{food.fat}g</span>
+          <span style={{ color: "var(--sf-text7)" }}> / {formatServing(asC(food))}</span>
+        </p>
+      </button>
+      {onFavToggle && (
+        <button
+          onClick={onFavToggle}
+          className="shrink-0 flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
+          style={{
+            color:           isFav ? "#fbbf24" : "var(--sf-text7)",
+            backgroundColor: isFav ? "rgba(251,191,36,0.08)" : "transparent",
+          }}
+          aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+        >
+          {isFav ? "★" : "☆"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 function MealBuilderSheet({
   foods,
   onClose,
@@ -625,26 +713,28 @@ function MealBuilderSheet({
   onGoToMyFoods: () => void;
 }) {
   const { dispatch } = useApp();
-  const hasFavorites = foods.some((f) => f.isFavorite);
-  const [activeTab,  setActiveTab] = useState<"favorites" | "all">(hasFavorites ? "favorites" : "all");
-  const [search,     setSearch]    = useState("");
-  const [selected,   setSelected]  = useState<Set<string>>(new Set());
-  const [amountMap,  setAmountMap] = useState<Record<string, string>>({});
-  const [unitMap,    setUnitMap]   = useState<Record<string, LogUnit>>({});
 
-  const searchLower = search.toLowerCase().trim();
-  function matchesSearch(food: CustomFood) {
-    if (!searchLower) return true;
+  const [builtinFavIds, setBuiltinFavIds] = useState<string[]>([]);
+  useEffect(() => { setBuiltinFavIds(loadBuiltinFavorites()); }, []);
+  const biiFavSet = new Set(builtinFavIds);
+
+  const hasAnyFavs = foods.some((f) => f.isFavorite) || builtinFavIds.length > 0;
+  const [tab,       setTab]       = useState<Tab>(hasAnyFavs ? "favorites" : "builtin");
+  const [search,    setSearch]    = useState("");
+  const [selected,  setSelected]  = useState<Set<string>>(new Set());
+  const [amountMap, setAmountMap] = useState<Record<string, string>>({});
+  const [unitMap,   setUnitMap]   = useState<Record<string, LogUnit>>({});
+
+  const sl = search.toLowerCase().trim();
+  function matches(f: AnyFood) {
+    if (!sl) return true;
     return (
-      food.name.toLowerCase().includes(searchLower) ||
-      (food.brand ?? "").toLowerCase().includes(searchLower)
+      f.name.toLowerCase().includes(sl) ||
+      (!isBI(f) && ((f as CustomFood).brand ?? "").toLowerCase().includes(sl))
     );
   }
 
-  const baseList       = activeTab === "favorites" ? foods.filter((f) => f.isFavorite) : foods;
-  const displayedFoods = baseList.filter(matchesSearch);
-
-  function toggleFood(food: CustomFood) {
+  function toggleFood(food: AnyFood) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(food.id)) {
@@ -653,29 +743,38 @@ function MealBuilderSheet({
         setUnitMap((m)   => { const c = { ...m }; delete c[food.id]; return c; });
       } else {
         next.add(food.id);
-        setAmountMap((m) => ({ ...m, [food.id]: defaultLogAmount(food) }));
-        setUnitMap((m)   => ({ ...m, [food.id]: defaultLogUnit(food)   }));
+        setAmountMap((m) => ({ ...m, [food.id]: defaultLogAmount(asC(food)) }));
+        setUnitMap((m)   => ({ ...m, [food.id]: defaultLogUnit(asC(food))   }));
       }
       return next;
     });
   }
 
-  const selectedFoods = foods.filter((f) => selected.has(f.id));
+  function toggleBIFav(id: string) {
+    const next = biiFavSet.has(id)
+      ? builtinFavIds.filter((x) => x !== id)
+      : [...builtinFavIds, id];
+    setBuiltinFavIds(next);
+    saveBuiltinFavorites(next);
+  }
 
-  function getServings(food: CustomFood) {
-    const amount   = parseFloat(amountMap[food.id] || "0") || 0;
-    const unit     = unitMap[food.id] ?? defaultLogUnit(food);
-    return toServings(food, amount, unit);
+  const allPool      = [...BUILT_IN_FOODS, ...foods] as AnyFood[];
+  const selectedFoods = allPool.filter((f) => selected.has(f.id));
+
+  function getServings(food: AnyFood) {
+    const amount = parseFloat(amountMap[food.id] || "0") || 0;
+    const unit   = unitMap[food.id] ?? defaultLogUnit(asC(food));
+    return toServings(asC(food), amount, unit);
   }
 
   const totals = selectedFoods.reduce(
-    (acc, food) => {
-      const s = getServings(food);
+    (acc, f) => {
+      const s = getServings(f);
       return {
-        calories: acc.calories + scaleMacro(food.calories, s),
-        protein:  acc.protein  + scaleMacro(food.protein,  s),
-        carbs:    acc.carbs    + scaleMacro(food.carbs,    s),
-        fat:      acc.fat      + scaleMacro(food.fat,      s),
+        calories: acc.calories + scaleMacro(f.calories, s),
+        protein:  acc.protein  + scaleMacro(f.protein,  s),
+        carbs:    acc.carbs    + scaleMacro(f.carbs,    s),
+        fat:      acc.fat      + scaleMacro(f.fat,      s),
       };
     },
     { calories: 0, protein: 0, carbs: 0, fat: 0 },
@@ -683,14 +782,14 @@ function MealBuilderSheet({
 
   function handleLog() {
     if (selectedFoods.length === 0) return;
-
     const items: FoodItem[] = selectedFoods.map((food) => {
       const amount   = parseFloat(amountMap[food.id] || "0") || 0;
-      const unit     = unitMap[food.id] ?? defaultLogUnit(food);
-      const servings = toServings(food, amount, unit);
-      const grams    = food.gramsPerServing ? servings * food.gramsPerServing : null;
-      const unitLabel =
-        unit === "serving" ? formatServing(food) : unit;
+      const unit     = unitMap[food.id] ?? defaultLogUnit(asC(food));
+      const servings = toServings(asC(food), amount, unit);
+      const grams    = asC(food).gramsPerServing
+        ? servings * (asC(food).gramsPerServing as number)
+        : null;
+      const unitLabel = unit === "serving" ? formatServing(asC(food)) : unit;
       return {
         name:     food.name,
         amount:   `${amount} ${unitLabel}`,
@@ -699,10 +798,9 @@ function MealBuilderSheet({
         protein:  scaleMacro(food.protein,  servings),
         carbs:    scaleMacro(food.carbs,    servings),
         fat:      scaleMacro(food.fat,      servings),
-        source:   "manual" as const,
+        source:   isBI(food) ? ("built_in" as const) : ("manual" as const),
       };
     });
-
     dispatch({
       type: "ADD_ENTRY",
       payload: {
@@ -716,68 +814,74 @@ function MealBuilderSheet({
         items,
       },
     });
-
     onClose();
   }
 
-  const canLog = selectedFoods.length > 0;
+  // ── Render food list for the active tab ──
+  function renderList() {
+    if (tab === "builtin" || tab === "all") {
+      const biFoods = BUILT_IN_FOODS.filter(matches);
+      const groups: Partial<Record<string, BuiltInFood[]>> = {};
+      for (const f of biFoods) {
+        if (!groups[f.category]) groups[f.category] = [];
+        groups[f.category]!.push(f);
+      }
+      const cats = BUILT_IN_CATEGORIES.filter((c) => groups[c]?.length);
+      const myFoodsFiltered = tab === "all" ? foods.filter(matches) : [];
 
-  return (
-    <SheetOverlay onClose={onClose}>
-      <SheetHeader title="Build Meal" onClose={onClose} />
-
-      {/* Tabs + Search */}
-      {foods.length > 0 && (
-        <div className="shrink-0 px-4 pt-3 pb-2 space-y-2.5">
-          <div
-            className="flex overflow-hidden rounded-xl"
-            style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
-          >
-            <button
-              onClick={() => setActiveTab("favorites")}
-              className="flex-1 py-2 text-xs font-bold transition-colors"
-              style={{
-                backgroundColor: activeTab === "favorites" ? "rgba(251,191,36,0.12)" : "transparent",
-                color:           activeTab === "favorites" ? "#fbbf24" : "var(--sf-text5)",
-              }}
-            >
-              ★ Favorites
-            </button>
-            <button
-              onClick={() => setActiveTab("all")}
-              className="flex-1 py-2 text-xs font-bold transition-colors"
-              style={{
-                borderLeft:      "1px solid var(--sf-pill)",
-                backgroundColor: activeTab === "all" ? "rgba(0,210,255,0.08)" : "transparent",
-                color:           activeTab === "all" ? "#00d2ff" : "var(--sf-text5)",
-              }}
-            >
-              All Foods
-            </button>
-          </div>
-          <input
-            type="text"
-            placeholder="Search foods…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
-            style={{
-              backgroundColor: "var(--sf-surface)",
-              border: "1px solid var(--sf-pill)",
-              color: "var(--sf-text1)",
-            }}
-          />
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto">
-        {foods.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-8 py-14 text-center">
-            <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
-              No foods saved yet
+      if (cats.length === 0 && myFoodsFiltered.length === 0) {
+        return (
+          <div className="py-10 text-center">
+            <p className="text-xs" style={{ color: "var(--sf-text5)" }}>
+              No foods match &ldquo;{search}&rdquo;
             </p>
+          </div>
+        );
+      }
+
+      return (
+        <>
+          {cats.map((cat) => (
+            <div key={cat}>
+              <CatHeader title={cat} />
+              {groups[cat]!.map((food) => (
+                <FoodRow
+                  key={food.id}
+                  food={food}
+                  isSelected={selected.has(food.id)}
+                  isFav={biiFavSet.has(food.id)}
+                  onToggle={() => toggleFood(food)}
+                  onFavToggle={() => toggleBIFav(food.id)}
+                />
+              ))}
+            </div>
+          ))}
+          {myFoodsFiltered.length > 0 && (
+            <>
+              <CatHeader title="My Foods" />
+              {myFoodsFiltered.map((food) => (
+                <FoodRow
+                  key={food.id}
+                  food={food}
+                  isSelected={selected.has(food.id)}
+                  isFav={false}
+                  onToggle={() => toggleFood(food)}
+                />
+              ))}
+            </>
+          )}
+        </>
+      );
+    }
+
+    if (tab === "myfoods") {
+      const filtered = foods.filter(matches);
+      if (foods.length === 0) {
+        return (
+          <div className="flex flex-col items-center justify-center px-8 py-12 text-center">
+            <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>No custom foods yet</p>
             <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>
-              Add your ingredients in My Foods first, then build meals from them.
+              Add your own foods in My Foods, or use Built-in foods.
             </p>
             <button
               onClick={onGoToMyFoods}
@@ -787,172 +891,250 @@ function MealBuilderSheet({
               Open My Foods →
             </button>
           </div>
-        ) : (
+        );
+      }
+      if (filtered.length === 0) {
+        return (
+          <div className="py-10 text-center">
+            <p className="text-xs" style={{ color: "var(--sf-text5)" }}>
+              No foods match &ldquo;{search}&rdquo;
+            </p>
+          </div>
+        );
+      }
+      return (
+        <>
+          {filtered.map((food) => (
+            <FoodRow
+              key={food.id}
+              food={food}
+              isSelected={selected.has(food.id)}
+              isFav={false}
+              onToggle={() => toggleFood(food)}
+            />
+          ))}
+        </>
+      );
+    }
+
+    // Favorites tab
+    const customFavs  = foods.filter((f) => f.isFavorite).filter(matches);
+    const builtinFavs = BUILT_IN_FOODS.filter((f) => biiFavSet.has(f.id)).filter(matches);
+
+    if (customFavs.length === 0 && builtinFavs.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center px-8 py-12 text-center">
+          <p className="text-sm font-bold" style={{ color: "var(--sf-text5)" }}>
+            {sl ? `No favorites match "${search}"` : "No favorites yet"}
+          </p>
+          {!sl && (
+            <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text7)" }}>
+              Star built-in foods from the Built-in tab, or star your foods in My Foods.
+            </p>
+          )}
+          <button
+            onClick={() => setTab("builtin")}
+            className="mt-4 rounded-2xl px-5 py-2.5 text-xs font-bold"
+            style={{ backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" }}
+          >
+            Browse Built-in →
+          </button>
+        </div>
+      );
+    }
+    return (
+      <>
+        {builtinFavs.length > 0 && (
           <>
-            {/* Food chip selector */}
-            <div className="px-5 pt-3 pb-3">
-              {displayedFoods.length === 0 ? (
-                activeTab === "favorites" && !searchLower ? (
-                  <div className="py-10 text-center">
-                    <p className="text-sm font-bold" style={{ color: "var(--sf-text5)" }}>
-                      No favorites yet
-                    </p>
-                    <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text7)" }}>
-                      Star foods you use often.
-                    </p>
-                    <button
-                      onClick={() => setActiveTab("all")}
-                      className="mt-4 rounded-2xl px-5 py-2.5 text-xs font-bold"
-                      style={{ backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" }}
-                    >
-                      View all foods →
-                    </button>
-                  </div>
-                ) : (
-                  <div className="py-10 text-center">
-                    <p className="text-xs" style={{ color: "var(--sf-text5)" }}>
-                      No foods match &ldquo;{search}&rdquo;
-                    </p>
-                  </div>
-                )
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {displayedFoods.map((food) => {
-                    const isOn = selected.has(food.id);
-                    return (
-                      <button
-                        key={food.id}
-                        onClick={() => toggleFood(food)}
-                        className="rounded-2xl px-3.5 py-2 text-sm font-bold transition-colors active:scale-95"
-                        style={{
-                          backgroundColor: isOn ? "rgba(0,210,255,0.12)" : "var(--sf-pill)",
-                          color:           isOn ? "#00d2ff" : "var(--sf-text3)",
-                          border: `1px solid ${isOn ? "rgba(0,210,255,0.3)" : "var(--sf-border2)"}`,
-                        }}
-                      >
-                        {food.isFavorite && !isOn && (
-                          <span style={{ color: "#fbbf24", marginRight: 2 }}>★</span>
+            <CatHeader title="Built-in" />
+            {builtinFavs.map((food) => (
+              <FoodRow
+                key={food.id}
+                food={food}
+                isSelected={selected.has(food.id)}
+                isFav={true}
+                onToggle={() => toggleFood(food)}
+                onFavToggle={() => toggleBIFav(food.id)}
+              />
+            ))}
+          </>
+        )}
+        {customFavs.length > 0 && (
+          <>
+            <CatHeader title="My Foods" />
+            {customFavs.map((food) => (
+              <FoodRow
+                key={food.id}
+                food={food}
+                isSelected={selected.has(food.id)}
+                isFav={false}
+                onToggle={() => toggleFood(food)}
+              />
+            ))}
+          </>
+        )}
+      </>
+    );
+  }
+
+  // ── Tab definitions ──
+  const TABS: Array<{ id: Tab; label: string }> = [
+    { id: "favorites", label: "★ Fav"    },
+    { id: "builtin",   label: "Built-in" },
+    { id: "myfoods",   label: "My Foods" },
+    { id: "all",       label: "All"      },
+  ];
+
+  const canLog = selectedFoods.length > 0;
+
+  return (
+    <SheetOverlay onClose={onClose}>
+      <SheetHeader title="Build Meal" onClose={onClose} />
+
+      {/* Tabs + Search */}
+      <div className="shrink-0 px-4 pt-3 pb-2 space-y-2">
+        <div
+          className="flex overflow-hidden rounded-xl"
+          style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
+        >
+          {TABS.map((t, i) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className="flex-1 py-2 text-xs font-bold transition-colors"
+              style={{
+                borderLeft:      i > 0 ? "1px solid var(--sf-pill)" : undefined,
+                backgroundColor:
+                  tab === t.id
+                    ? t.id === "favorites"
+                      ? "rgba(251,191,36,0.12)"
+                      : "rgba(0,210,255,0.08)"
+                    : "transparent",
+                color:
+                  tab === t.id
+                    ? t.id === "favorites" ? "#fbbf24" : "#00d2ff"
+                    : "var(--sf-text5)",
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          placeholder="Search foods…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
+          style={{
+            backgroundColor: "var(--sf-surface)",
+            border: "1px solid var(--sf-pill)",
+            color: "var(--sf-text1)",
+          }}
+        />
+      </div>
+
+      {/* Scrollable food list + Your Meal section */}
+      <div className="flex-1 overflow-y-auto">
+        {renderList()}
+
+        {/* Your Meal */}
+        {selectedFoods.length > 0 && (
+          <div style={{ borderTop: "2px solid var(--sf-border2)" }}>
+            <CatHeader title="Your Meal" />
+            <div className="divide-y" style={{ borderColor: "var(--sf-border)" }}>
+              {selectedFoods.map((food) => {
+                const logUnits = getLogUnits(asC(food));
+                const unit     = unitMap[food.id] ?? defaultLogUnit(asC(food));
+                const s        = getServings(food);
+                const cal      = scaleMacro(food.calories, s);
+                const pro      = scaleMacro(food.protein,  s);
+                return (
+                  <div key={food.id} className="px-5 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
+                          {food.name}
+                        </p>
+                        <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
+                          {cal} cal · P {pro}g
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={amountMap[food.id] ?? ""}
+                          onChange={(e) =>
+                            setAmountMap((m) => ({ ...m, [food.id]: e.target.value }))
+                          }
+                          className="w-16 rounded-xl px-2 py-2 text-center text-sm font-bold outline-none"
+                          style={{
+                            backgroundColor: "var(--sf-surface)",
+                            border: "1px solid var(--sf-border2)",
+                            color: "var(--sf-text1)",
+                          }}
+                        />
+                        {logUnits.length > 1 ? (
+                          <select
+                            value={unit}
+                            onChange={(e) =>
+                              setUnitMap((m) => ({ ...m, [food.id]: e.target.value as LogUnit }))
+                            }
+                            className="rounded-xl px-2 py-2 text-xs font-bold outline-none"
+                            style={{
+                              backgroundColor: "var(--sf-surface)",
+                              border: "1px solid var(--sf-border2)",
+                              color: "var(--sf-text1)",
+                              maxWidth: 80,
+                            }}
+                          >
+                            {logUnits.map((lu) => (
+                              <option
+                                key={lu.unit}
+                                value={lu.unit}
+                                style={{ backgroundColor: "var(--sf-surface)" }}
+                              >
+                                {lu.label}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-xs" style={{ color: "var(--sf-text5)" }}>
+                            {logUnits[0]?.label ?? ""}
+                          </span>
                         )}
-                        {isOn ? "✓ " : ""}{food.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Selected items + amount/unit inputs */}
-            {selectedFoods.length > 0 && (
-              <div style={{ borderTop: "1px solid var(--sf-border)" }}>
-                <div className="px-5 pt-3 pb-1">
-                  <p
-                    className="text-[10px] font-bold uppercase tracking-widest"
-                    style={{ color: "var(--sf-text6)" }}
-                  >
-                    Your meal
-                  </p>
-                </div>
-                <div className="divide-y" style={{ borderColor: "var(--sf-border)" }}>
-                  {selectedFoods.map((food) => {
-                    const logUnits = getLogUnits(food);
-                    const unit     = unitMap[food.id]   ?? defaultLogUnit(food);
-                    const s        = getServings(food);
-                    const cal      = scaleMacro(food.calories, s);
-                    const pro      = scaleMacro(food.protein,  s);
-                    return (
-                      <div key={food.id} className="px-5 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className="truncate text-sm font-bold"
-                              style={{ color: "var(--sf-text1)" }}
-                            >
-                              {food.name}
-                            </p>
-                            <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
-                              {cal} cal · P {pro}g
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            <input
-                              type="number"
-                              inputMode="decimal"
-                              value={amountMap[food.id] ?? ""}
-                              onChange={(e) =>
-                                setAmountMap((m) => ({ ...m, [food.id]: e.target.value }))
-                              }
-                              className="w-16 rounded-xl px-2 py-2 text-center text-sm font-bold outline-none"
-                              style={{
-                                backgroundColor: "var(--sf-surface)",
-                                border: "1px solid var(--sf-border2)",
-                                color: "var(--sf-text1)",
-                              }}
-                            />
-                            {logUnits.length > 1 ? (
-                              <select
-                                value={unit}
-                                onChange={(e) =>
-                                  setUnitMap((m) => ({ ...m, [food.id]: e.target.value as LogUnit }))
-                                }
-                                className="rounded-xl px-2 py-2 text-xs font-bold outline-none"
-                                style={{
-                                  backgroundColor: "var(--sf-surface)",
-                                  border: "1px solid var(--sf-border2)",
-                                  color: "var(--sf-text1)",
-                                  maxWidth: 80,
-                                }}
-                              >
-                                {logUnits.map((lu) => (
-                                  <option
-                                    key={lu.unit}
-                                    value={lu.unit}
-                                    style={{ backgroundColor: "var(--sf-surface)" }}
-                                  >
-                                    {lu.label}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="text-xs" style={{ color: "var(--sf-text5)" }}>
-                                {logUnits[0]?.label ?? ""}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Running total */}
-                <div
-                  className="mx-5 my-3 rounded-2xl px-5 py-3.5"
-                  style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
-                >
-                  <p className="text-xl font-black" style={{ color: "var(--sf-text1)" }}>
-                    {totals.calories}
-                    <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>cal</span>
-                  </p>
-                  <p className="mt-1 text-xs" style={{ color: "var(--sf-text5)" }}>
-                    P{" "}
-                    <span className="font-bold" style={{ color: "#38bdf8" }}>{totals.protein}g</span>
-                    {"  ·  "}C{" "}
-                    <span className="font-bold" style={{ color: "#a78bfa" }}>{totals.carbs}g</span>
-                    {"  ·  "}F{" "}
-                    <span className="font-bold" style={{ color: "#fb7185" }}>{totals.fat}g</span>
-                  </p>
-                </div>
-              </div>
-            )}
-          </>
+            {/* Running total */}
+            <div
+              className="mx-5 my-3 rounded-2xl px-5 py-3.5"
+              style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
+            >
+              <p className="text-xl font-black" style={{ color: "var(--sf-text1)" }}>
+                {totals.calories}
+                <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>cal</span>
+              </p>
+              <p className="mt-1 text-xs" style={{ color: "var(--sf-text5)" }}>
+                P{" "}
+                <span className="font-bold" style={{ color: "#38bdf8" }}>{totals.protein}g</span>
+                {"  ·  "}C{" "}
+                <span className="font-bold" style={{ color: "#a78bfa" }}>{totals.carbs}g</span>
+                {"  ·  "}F{" "}
+                <span className="font-bold" style={{ color: "#fb7185" }}>{totals.fat}g</span>
+              </p>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Footer */}
-      <div
-        className="shrink-0 px-5 py-4"
-        style={{ borderTop: "1px solid var(--sf-border)" }}
-      >
+      <div className="shrink-0 px-5 py-4" style={{ borderTop: "1px solid var(--sf-border)" }}>
         <button
           onClick={handleLog}
           disabled={!canLog}
@@ -962,9 +1144,7 @@ function MealBuilderSheet({
             color:           canLog ? "#0a0a0a" : "var(--sf-text7)",
           }}
         >
-          {canLog
-            ? `Add ${totals.calories} cal to Log`
-            : "Select foods above"}
+          {canLog ? `Add ${totals.calories} cal to Log` : "Select foods above"}
         </button>
       </div>
     </SheetOverlay>
