@@ -5,6 +5,7 @@ import { useApp } from "@/context/AppContext";
 import { loadProfile, DEFAULT_PROFILE } from "@/lib/profile";
 import type { Profile } from "@/lib/profile";
 import { useLang } from "@/context/LanguageContext";
+import { localName, localNote, localWarning } from "@/lib/localFood";
 import {
   MEAL_SLOTS,
   TIER_FOODS,
@@ -54,6 +55,8 @@ function FoodRow({
   item: FoodOption;
   onDelete?: () => void;
 }) {
+  const { lang } = useLang();
+  const warning = localWarning(item, lang);
   return (
     <div
       className="flex items-center gap-2 py-2"
@@ -61,14 +64,14 @@ function FoodRow({
     >
       <div className="flex-1 min-w-0">
         <p className="truncate text-sm font-semibold leading-snug" style={{ color: "var(--sf-text1)" }}>
-          {item.name}
+          {localName(item, lang)}
         </p>
         <p
           className="text-[11px] leading-tight"
-          style={{ color: item.warning ? "#fbbf24" : "var(--sf-text5)" }}
+          style={{ color: warning ? "#fbbf24" : "var(--sf-text5)" }}
         >
           {item.portion}
-          {item.warning ? ` · ⚠ ${item.warning}` : ""}
+          {warning ? ` · ⚠ ${warning}` : ""}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
@@ -111,7 +114,7 @@ function FoodSection({
   items: FoodOption[];
   chips?: boolean;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? items : items.slice(0, SHOW_LIMIT);
   const hiddenCount = items.length - SHOW_LIMIT;
@@ -136,7 +139,7 @@ function FoodSection({
               className="rounded-full px-2.5 py-1 text-[11px] font-medium"
               style={{ backgroundColor: "var(--sf-pill)", color: item.calories > 0 ? "var(--sf-text3)" : "var(--sf-text4)" }}
             >
-              {item.name}
+              {localName(item, lang)}
               {item.calories > 0 ? ` · ${item.calories}` : ""}
             </span>
           ))}
@@ -506,7 +509,7 @@ function CollapsibleCard({
 export default function MenuPage() {
   const { state } = useApp();
   const { entries, goals } = state;
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
   const TIER_CONFIG: {
     tier: MealTier;
@@ -773,11 +776,11 @@ export default function MenuPage() {
             <div className="mb-3 flex flex-wrap gap-1.5">
               {SAUCES_FREE.map((s) => (
                 <span
-                  key={s}
+                  key={s.name}
                   className="rounded-full px-2.5 py-1 text-[11px]"
                   style={{ backgroundColor: "var(--sf-pill)", color: "var(--sf-text3)" }}
                 >
-                  {s}
+                  {localName(s, lang)}
                 </span>
               ))}
             </div>
@@ -790,11 +793,11 @@ export default function MenuPage() {
             <div className="flex flex-wrap gap-1.5">
               {SAUCES_CAREFUL.map((s) => (
                 <span
-                  key={s}
+                  key={s.name}
                   className="rounded-full px-2.5 py-1 text-[11px]"
                   style={{ backgroundColor: "var(--sf-pill)", color: "var(--sf-text3)" }}
                 >
-                  {s}
+                  {localName(s, lang)}
                 </span>
               ))}
             </div>
@@ -815,9 +818,9 @@ export default function MenuPage() {
                 className="rounded-xl px-3 py-2"
                 style={{ backgroundColor: "var(--sf-border)" }}
               >
-                <p className="text-xs font-bold" style={{ color: "var(--sf-text1)" }}>{w.name}</p>
+                <p className="text-xs font-bold" style={{ color: "var(--sf-text1)" }}>{localName(w, lang)}</p>
                 <p className="mt-0.5 text-[10px]" style={{ color: "var(--sf-text4)" }}>
-                  {w.note}
+                  {localNote(w, lang)}
                 </p>
               </div>
             ))}

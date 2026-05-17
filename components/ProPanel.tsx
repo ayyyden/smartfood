@@ -23,8 +23,10 @@ import {
 import {
   BUILT_IN_FOODS,
   BUILT_IN_CATEGORIES,
+  BUILT_IN_CATEGORY_HE,
   type BuiltInFood,
 } from "@/lib/builtInFoods";
+import { localName } from "@/lib/localFood";
 
 // ─── Unit options ─────────────────────────────────────────────────────────────
 
@@ -901,7 +903,7 @@ function FoodRow({
   food: AnyFood; isSelected: boolean; isFav: boolean;
   onToggle: () => void; onFavToggle?: () => void;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   return (
     <div
       className="flex items-center gap-2 px-5 py-3"
@@ -917,7 +919,7 @@ function FoodRow({
             className="text-sm font-bold truncate"
             style={{ color: isSelected ? "#00d2ff" : "var(--sf-text1)" }}
           >
-            {food.name}
+            {localName(food, lang)}
           </p>
           {isBI(food) && !onFavToggle && (
             <span
@@ -970,7 +972,7 @@ function QuantitySheet({
   onAdd: (amount: string, unit: LogUnit) => void;
   onClose: () => void;
 }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const cf          = asC(food);
   const pickerUnits = getPickerUnits(food);
   const [unit,   setUnit]   = useState<LogUnit>(() => initialUnit ?? pickerUnits[0]?.unit ?? "serving");
@@ -1010,7 +1012,7 @@ function QuantitySheet({
             {t("pro.howMuch")}
           </p>
           <p className="mt-1 text-lg font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
-            {food.name}
+            {localName(food, lang)}
           </p>
           {isBI(food) && (
             <span
@@ -1122,7 +1124,7 @@ function MealBuilderSheet({
   onSaveFood: (food: CustomFood) => void;
 }) {
   const { dispatch } = useApp();
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
   const [builtinFavIds, setBuiltinFavIds] = useState<string[]>([]);
   useEffect(() => { setBuiltinFavIds(loadBuiltinFavorites()); }, []);
@@ -1150,10 +1152,10 @@ function MealBuilderSheet({
   const sl = search.toLowerCase().trim();
   function matches(f: AnyFood) {
     if (!sl) return true;
-    return (
-      f.name.toLowerCase().includes(sl) ||
-      (!isBI(f) && ((f as CustomFood).brand ?? "").toLowerCase().includes(sl))
-    );
+    if (f.name.toLowerCase().includes(sl)) return true;
+    if (isBI(f) && ((f as BuiltInFood).nameHe ?? "").toLowerCase().includes(sl)) return true;
+    if (!isBI(f) && ((f as CustomFood).brand ?? "").toLowerCase().includes(sl)) return true;
+    return false;
   }
 
   function handleFoodTap(food: AnyFood) {
@@ -1329,7 +1331,7 @@ function MealBuilderSheet({
         <>
           {cats.map((cat) => (
             <div key={cat}>
-              <CatHeader title={cat} />
+              <CatHeader title={lang === "he" ? (BUILT_IN_CATEGORY_HE[cat] ?? cat) : cat} />
               {groups[cat]!.map((food) => (
                 <FoodRow
                   key={food.id}
@@ -1576,7 +1578,7 @@ function MealBuilderSheet({
                   onClick={() => handleFoodTap(food)}
                 >
                   <p className="truncate text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
-                    {food.name}
+                    {localName(food, lang)}
                   </p>
                   <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
                     <span style={{ color: "#00d2ff" }}>{amt} {unitLabel}</span>
