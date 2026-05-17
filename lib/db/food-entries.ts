@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/client";
 import type { FoodEntry } from "@/context/AppContext";
 
-function todayDate(): string {
-  return new Date().toISOString().split("T")[0];
+// Returns YYYY-MM-DD in the user's LOCAL timezone, not UTC.
+// This is the canonical date key used for all per-day filtering.
+export function getLocalDateKey(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export async function fetchTodayEntries(userId: string): Promise<FoodEntry[]> {
@@ -11,7 +16,7 @@ export async function fetchTodayEntries(userId: string): Promise<FoodEntry[]> {
     .from("food_entries")
     .select("*")
     .eq("user_id", userId)
-    .eq("date", todayDate())
+    .eq("date_key", getLocalDateKey())
     .order("logged_at", { ascending: false });
   if (error || !data) return [];
   return data.map((row) => ({
@@ -34,6 +39,7 @@ export async function insertFoodEntry(userId: string, entry: FoodEntry): Promise
     original_text: entry.text,
     logged_at:     entry.time,
     date:          entry.time.split("T")[0],
+    date_key:      getLocalDateKey(),
     calories:      entry.calories,
     protein:       entry.protein,
     carbs:         entry.carbs,
