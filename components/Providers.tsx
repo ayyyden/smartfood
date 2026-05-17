@@ -4,6 +4,7 @@ import { AppProvider } from "@/context/AppContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import UpdateNote from "@/components/UpdateNote";
 import type { ReactNode } from "react";
 
 export default function Providers({ children }: { children: ReactNode }) {
@@ -13,6 +14,7 @@ export default function Providers({ children }: { children: ReactNode }) {
         <AuthProvider>
           <AppProvider>{children}</AppProvider>
         </AuthProvider>
+        <UpdateNote />
       </ThemeProvider>
     </LanguageProvider>
   );
