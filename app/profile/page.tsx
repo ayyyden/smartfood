@@ -142,55 +142,7 @@ function MultiPillGroup({
   );
 }
 
-// ─── Option lists ─────────────────────────────────────────────────────────────
-
-const GENDER_OPTIONS = [
-  { value: "male",   label: "Male" },
-  { value: "female", label: "Female" },
-];
-
-const GOAL_OPTIONS = [
-  { value: "lose",     label: "Lose weight" },
-  { value: "maintain", label: "Maintain" },
-  { value: "gain",     label: "Gain muscle" },
-];
-
-const ACTIVITY_OPTIONS = [
-  { value: "sedentary",   label: "Sedentary" },
-  { value: "light",       label: "Light" },
-  { value: "moderate",    label: "Moderate" },
-  { value: "active",      label: "Active" },
-  { value: "very_active", label: "Very active" },
-];
-
-const ACTIVITY_DESCRIPTIONS: Record<ActivityLevel, string> = {
-  sedentary:   "Desk job, little or no exercise",
-  light:       "Light exercise 1–2 days/week",
-  moderate:    "Moderate exercise 3–5 days/week",
-  active:      "Hard exercise 6–7 days/week",
-  very_active: "Athlete or physical job",
-};
-
-const DIET_OPTIONS = [
-  { value: "vegetarian",   label: "Vegetarian" },
-  { value: "vegan",        label: "Vegan" },
-  { value: "kosher",       label: "Kosher" },
-  { value: "halal",        label: "Halal" },
-  { value: "gluten_free",  label: "Gluten-Free" },
-  { value: "dairy_free",   label: "Dairy-Free" },
-  { value: "nut_free",     label: "Nut-Free" },
-  { value: "low_carb",     label: "Low-Carb" },
-  { value: "keto",         label: "Keto" },
-  { value: "paleo",        label: "Paleo" },
-  { value: "no_pork",      label: "No Pork" },
-  { value: "no_shellfish", label: "No Shellfish" },
-  { value: "no_eggs",      label: "No Eggs" },
-  { value: "no_fish",      label: "No Fish" },
-];
-
-const DIET_LABEL: Record<string, string> = Object.fromEntries(
-  DIET_OPTIONS.map((o) => [o.value, o.label]),
-);
+// ─── Option lists (built inside ProfilePage using t()) ────────────────────────
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -198,6 +150,43 @@ export default function ProfilePage() {
   const { dispatch } = useApp();
   const { user, loading: authLoading } = useAuth();
   const { t } = useLang();
+
+  const GENDER_OPTIONS = [
+    { value: "male",   label: t("common.gender.male") },
+    { value: "female", label: t("common.gender.female") },
+  ];
+  const GOAL_OPTIONS = [
+    { value: "lose",     label: t("common.goal.lose") },
+    { value: "maintain", label: t("common.goal.maintain") },
+    { value: "gain",     label: t("common.goal.gain") },
+  ];
+  const ACTIVITY_OPTIONS = [
+    { value: "sedentary",   label: t("common.activity.sedentary") },
+    { value: "light",       label: t("common.activity.light") },
+    { value: "moderate",    label: t("common.activity.moderate") },
+    { value: "active",      label: t("common.activity.active") },
+    { value: "very_active", label: t("common.activity.very_active") },
+  ];
+  const DIET_OPTIONS = [
+    { value: "vegetarian",   label: t("common.diet.vegetarian") },
+    { value: "vegan",        label: t("common.diet.vegan") },
+    { value: "kosher",       label: t("common.diet.kosher") },
+    { value: "halal",        label: t("common.diet.halal") },
+    { value: "gluten_free",  label: t("common.diet.gluten_free") },
+    { value: "dairy_free",   label: t("common.diet.dairy_free") },
+    { value: "nut_free",     label: t("common.diet.nut_free") },
+    { value: "low_carb",     label: t("common.diet.low_carb") },
+    { value: "keto",         label: t("common.diet.keto") },
+    { value: "paleo",        label: t("common.diet.paleo") },
+    { value: "no_pork",      label: t("common.diet.no_pork") },
+    { value: "no_shellfish", label: t("common.diet.no_shellfish") },
+    { value: "no_eggs",      label: t("common.diet.no_eggs") },
+    { value: "no_fish",      label: t("common.diet.no_fish") },
+  ];
+  const DIET_LABEL: Record<string, string> = Object.fromEntries(
+    DIET_OPTIONS.map((o) => [o.value, o.label]),
+  );
+
   const [profile, setProfile]               = useState<Profile>(DEFAULT_PROFILE);
   const [viewMode, setViewMode]             = useState<"form" | "summary">("form");
   const [hasExistingProfile, setHasExisting] = useState(false);
@@ -320,12 +309,12 @@ export default function ProfilePage() {
   // ── Summary / Account view ────────────────────────────────────────────────
   if (viewMode === "summary") {
     const goalLabel =
-      profile.goal === "lose"     ? "Lose weight" :
-      profile.goal === "gain"     ? "Gain muscle" :
-      profile.goal === "maintain" ? "Maintain"    : "—";
+      profile.goal === "lose"     ? t("common.goal.lose") :
+      profile.goal === "gain"     ? t("common.goal.gain") :
+      profile.goal === "maintain" ? t("common.goal.maintain") : "—";
     const genderLabel =
-      profile.gender === "male"   ? "Male" :
-      profile.gender === "female" ? "Female" : "";
+      profile.gender === "male"   ? t("common.gender.male") :
+      profile.gender === "female" ? t("common.gender.female") : "";
 
     return (
       <div className="flex h-full flex-col">
@@ -368,7 +357,7 @@ export default function ProfilePage() {
               </div>
               {(genderLabel || age) && (
                 <p className="mt-3 text-sm font-medium" style={{ color: "var(--sf-text4)" }}>
-                  {[genderLabel, age ? `${age} yrs` : ""].filter(Boolean).join(" · ")}
+                  {[genderLabel, age ? t("profile.years", { age: String(age) }) : ""].filter(Boolean).join(" · ")}
                 </p>
               )}
               {profile.goal && (
@@ -487,10 +476,10 @@ export default function ProfilePage() {
         </div>
 
         {/* ── Body ── */}
-        <SectionCard title="Body">
+        <SectionCard title={t("profile.sectionBody")}>
 
           {/* Unit toggle */}
-          <Field label="Units">
+          <Field label={t("profile.units")}>
             <div
               className="flex overflow-hidden rounded-xl"
               style={{ border: "1px solid var(--sf-border2)" }}
@@ -503,7 +492,7 @@ export default function ProfilePage() {
                   ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" }
                   : { backgroundColor: "var(--sf-input)", color: "var(--sf-text5)" }}
               >
-                Metric (kg / cm)
+                {t("profile.metric")}
               </button>
               <button
                 type="button"
@@ -513,13 +502,13 @@ export default function ProfilePage() {
                   ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" }
                   : { backgroundColor: "var(--sf-input)", color: "var(--sf-text5)" }}
               >
-                Imperial (lb / in)
+                {t("profile.imperial")}
               </button>
             </div>
           </Field>
 
           {/* Date of birth */}
-          <Field label="Date of birth">
+          <Field label={t("profile.dateOfBirth")}>
             <input
               type="date"
               value={profile.dateOfBirth}
@@ -537,55 +526,55 @@ export default function ProfilePage() {
             />
             {age !== null && (
               <p className="text-xs" style={{ color: "var(--sf-text6)" }}>
-                Age: <span className="font-semibold" style={{ color: "var(--sf-text1)" }}>{age}</span>
+                {t("profile.age")}: <span className="font-semibold" style={{ color: "var(--sf-text1)" }}>{age}</span>
               </p>
             )}
           </Field>
 
           {/* Gender */}
-          <Field label="Gender">
+          <Field label={t("profile.gender")}>
             <PillGroup options={GENDER_OPTIONS} value={profile.gender}
               onChange={(v) => updateProfile({ gender: v as Gender })} />
           </Field>
 
           {/* Height + Weight */}
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Height">
+            <Field label={t("profile.height")}>
               <NumInput value={dispHeight} onChange={handleHeightChange}
                 placeholder={isImperial ? "69" : "175"} unit={isImperial ? "in" : "cm"} min={1} />
             </Field>
-            <Field label="Weight">
+            <Field label={t("profile.weight")}>
               <NumInput value={dispWeight} onChange={handleWeightChange}
                 placeholder={isImperial ? "176" : "80"} unit={isImperial ? "lb" : "kg"} min={1} />
             </Field>
           </div>
 
           {/* Goal weight */}
-          <Field label="Goal weight">
+          <Field label={t("profile.goalWeight")}>
             <NumInput value={dispGoalWt} onChange={handleGoalWeightChange}
               placeholder={isImperial ? "165" : "75"} unit={isImperial ? "lb" : "kg"} min={1} />
           </Field>
         </SectionCard>
 
         {/* ── Goal ── */}
-        <SectionCard title="Goal">
-          <Field label="I want to">
+        <SectionCard title={t("profile.sectionGoal")}>
+          <Field label={t("profile.iWantTo")}>
             <PillGroup options={GOAL_OPTIONS} value={profile.goal}
               onChange={(v) => updateProfile({ goal: v as FitnessGoal })} />
           </Field>
-          <Field label="Activity level">
+          <Field label={t("profile.activityLevel")}>
             <PillGroup options={ACTIVITY_OPTIONS} value={profile.activityLevel}
               onChange={(v) => updateProfile({ activityLevel: v as ActivityLevel })} />
             {profile.activityLevel && (
               <p className="pt-0.5 text-xs" style={{ color: "var(--sf-text6)" }}>
-                {ACTIVITY_DESCRIPTIONS[profile.activityLevel as ActivityLevel]}
+                {t(`common.activityDesc.${profile.activityLevel}`)}
               </p>
             )}
           </Field>
         </SectionCard>
 
         {/* ── Daily calorie target ── */}
-        <SectionCard title="Daily calorie target">
+        <SectionCard title={t("profile.sectionCalTarget")}>
 
           {/* Recommendation banner */}
           <div className="rounded-xl px-4 py-3" style={{ backgroundColor: "var(--sf-border)" }}>
@@ -596,26 +585,26 @@ export default function ProfilePage() {
                     className="text-[11px] font-semibold uppercase tracking-widest"
                     style={{ color: "var(--sf-text6)" }}
                   >
-                    Recommended
+                    {t("profile.recommended")}
                   </p>
                   <p className="mt-0.5 text-lg font-black" style={{ color: "var(--sf-text1)" }}>
                     {recommendation.calories.toLocaleString()}
-                    <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>cal/day</span>
+                    <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>{t("profile.calPerDay")}</span>
                   </p>
                 </div>
                 <p className="text-right text-[11px] leading-snug" style={{ color: "var(--sf-text6)" }}>
-                  Based on your<br />stats &amp; goal
+                  {t("profile.basedOnStats")}
                 </p>
               </div>
             ) : (
               <p className="text-xs leading-snug" style={{ color: "var(--sf-text6)" }}>
-                Complete your body measurements and goal above to see a personalized calorie recommendation.
+                {t("profile.completeMeasurements")}
               </p>
             )}
           </div>
 
           {/* Calorie input */}
-          <Field label="Your daily calorie goal">
+          <Field label={t("profile.yourDailyGoal")}>
             <div className="flex items-center gap-2">
               <div className="flex flex-1 min-w-0 items-center gap-2">
                 <input
@@ -646,20 +635,20 @@ export default function ProfilePage() {
                     border: "1px solid var(--sf-border2)",
                   }}
                 >
-                  Reset ↺
+                  {t("profile.reset")}
                 </button>
               )}
             </div>
             {isOverridden && (
               <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
-                Custom — differs from recommendation ({recommendation?.calories.toLocaleString()} cal)
+                {t("profile.customDiffers", { cal: String(recommendation?.calories.toLocaleString()) })}
               </p>
             )}
           </Field>
         </SectionCard>
 
         {/* ── Dietary restrictions ── */}
-        <SectionCard title="Dietary restrictions">
+        <SectionCard title={t("profile.dietaryRestrictions")}>
           <MultiPillGroup
             options={DIET_OPTIONS}
             value={profile.dietRules}
@@ -674,7 +663,7 @@ export default function ProfilePage() {
           className="w-full rounded-2xl py-4 text-sm font-bold transition-all active:scale-[0.98]"
           style={{ backgroundColor: "#00d2ff", color: "#0a0a0a" }}
         >
-          Save Profile
+          {t("profile.saveButton")}
         </button>
 
         <div className="h-8 shrink-0" />

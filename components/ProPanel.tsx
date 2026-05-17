@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useApp } from "@/context/AppContext";
+import { useLang } from "@/context/LanguageContext";
 import type { FoodItem } from "@/lib/types";
 import {
   loadProFoods,
@@ -197,6 +198,7 @@ function SheetHeader({
   onClose: () => void;
   onBack?: () => void;
 }) {
+  const { t } = useLang();
   return (
     <div
       className="flex shrink-0 items-center justify-between px-5 py-3"
@@ -208,7 +210,7 @@ function SheetHeader({
           className="text-sm font-bold"
           style={{ color: "var(--sf-text5)" }}
         >
-          ← Back
+          {t("pro.back")}
         </button>
       ) : (
         <div className="w-12" />
@@ -274,6 +276,7 @@ function MyFoodsSheet({
   onUpdate: (updated: CustomFood[]) => void;
   onClose: () => void;
 }) {
+  const { t } = useLang();
   const [view, setView]       = useState<"list" | "form">("list");
   const [editing, setEditing] = useState<CustomFood | null>(null);
   const [form, setForm]       = useState<FoodForm>(EMPTY_FORM);
@@ -330,10 +333,14 @@ function MyFoodsSheet({
   const needsGramsField = (form.servingUnit ?? "g") !== "g" && (form.servingUnit ?? "g") !== "oz";
   const canSave = (form.name ?? "").trim() !== "";
 
+  const sheetTitle = view === "list"
+    ? t("pro.myFoods")
+    : editing ? t("pro.editFood") : t("pro.newFood");
+
   return (
     <SheetOverlay onClose={onClose}>
       <SheetHeader
-        title={view === "list" ? "My Foods" : editing ? "Edit Food" : "New Food"}
+        title={sheetTitle}
         onClose={onClose}
         onBack={view === "form" ? () => setView("list") : undefined}
       />
@@ -345,11 +352,10 @@ function MyFoodsSheet({
             {foods.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-8 py-14 text-center">
                 <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
-                  No foods saved yet
+                  {t("pro.noFoodsSaved")}
                 </p>
                 <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>
-                  Add your ingredients once and reuse them every meal.
-                  Use exactly what the nutrition label says.
+                  {t("pro.noFoodsHint")}
                 </p>
               </div>
             ) : (
@@ -389,7 +395,7 @@ function MyFoodsSheet({
                         color:           food.isFavorite ? "#fbbf24" : "var(--sf-text7)",
                         backgroundColor: food.isFavorite ? "rgba(251,191,36,0.08)" : "transparent",
                       }}
-                      aria-label={food.isFavorite ? "Remove from favorites" : "Add to favorites"}
+                      aria-label={food.isFavorite ? t("pro.removeFavorite") : t("pro.addFavorite")}
                     >
                       {food.isFavorite ? "★" : "☆"}
                     </button>
@@ -423,7 +429,7 @@ function MyFoodsSheet({
               className="w-full rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-95"
               style={{ backgroundColor: "#00d2ff", color: "#0a0a0a" }}
             >
-              + New Food
+              {t("pro.addNewFood")}
             </button>
           </div>
         </>
@@ -438,11 +444,11 @@ function MyFoodsSheet({
                 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--sf-text5)" }}
               >
-                Food name
+                {t("pro.foodName")}
               </p>
               <input
                 type="text"
-                placeholder="e.g. My Rice, My Chicken Breast…"
+                placeholder={t("pro.foodNamePlaceholder")}
                 value={form.name ?? ""}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 autoFocus
@@ -461,17 +467,17 @@ function MyFoodsSheet({
                 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--sf-text5)" }}
               >
-                Brand{" "}
+                {t("pro.brand")}{" "}
                 <span
                   className="normal-case font-normal tracking-normal"
                   style={{ color: "var(--sf-text7)" }}
                 >
-                  (optional)
+                  ({t("pro.optional")})
                 </span>
               </p>
               <input
                 type="text"
-                placeholder="e.g. Trader Joe's, Generic…"
+                placeholder={t("pro.brandPlaceholder")}
                 value={form.brand ?? ""}
                 onChange={(e) => setForm({ ...form, brand: e.target.value })}
                 className="w-full rounded-xl px-4 py-3 text-sm outline-none"
@@ -489,7 +495,7 @@ function MyFoodsSheet({
                 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--sf-text5)" }}
               >
-                Serving size
+                {t("pro.servingSize")}
               </p>
               <div className="flex gap-2">
                 <input
@@ -534,7 +540,7 @@ function MyFoodsSheet({
                 </select>
               </div>
               <p className="mt-1.5 text-[11px]" style={{ color: "var(--sf-text7)" }}>
-                All nutrition values below are per this serving
+                {t("pro.servingNote")}
               </p>
             </div>
 
@@ -545,11 +551,11 @@ function MyFoodsSheet({
                   className="mb-1.5 text-[10px] font-bold uppercase tracking-widest"
                   style={{ color: "var(--sf-text5)" }}
                 >
-                  Unit name
+                  {t("pro.unitName")}
                 </p>
                 <input
                   type="text"
-                  placeholder="e.g. packet, bar, scoop…"
+                  placeholder={t("pro.unitNamePlaceholder")}
                   value={form.customUnitName ?? ""}
                   onChange={(e) => setForm({ ...form, customUnitName: e.target.value })}
                   className="w-full rounded-xl px-4 py-3 text-sm outline-none"
@@ -569,12 +575,12 @@ function MyFoodsSheet({
                   className="mb-1.5 text-[10px] font-bold uppercase tracking-widest"
                   style={{ color: "var(--sf-text5)" }}
                 >
-                  Grams per serving{" "}
+                  {t("pro.gramsPerServing")}{" "}
                   <span
                     className="normal-case font-normal tracking-normal"
                     style={{ color: "var(--sf-text7)" }}
                   >
-                    (optional — enables logging by g or oz)
+                    ({t("pro.gramsNote")})
                   </span>
                 </p>
                 <div className="flex items-center gap-2">
@@ -602,13 +608,13 @@ function MyFoodsSheet({
                 className="mb-2.5 text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--sf-text5)" }}
               >
-                Nutrition per serving
+                {t("pro.nutritionPerServing")}
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <MacroField label="Calories" unit="kcal" color="#00d2ff" value={form.calories ?? ""} onChange={(v) => setForm({ ...form, calories: v })} />
-                <MacroField label="Protein"  unit="g"    color="#38bdf8" value={form.protein  ?? ""} onChange={(v) => setForm({ ...form, protein:  v })} />
-                <MacroField label="Carbs"    unit="g"    color="#a78bfa" value={form.carbs    ?? ""} onChange={(v) => setForm({ ...form, carbs:    v })} />
-                <MacroField label="Fat"      unit="g"    color="#fb7185" value={form.fat      ?? ""} onChange={(v) => setForm({ ...form, fat:      v })} />
+                <MacroField label={t("pro.calories")} unit="kcal" color="#00d2ff" value={form.calories ?? ""} onChange={(v) => setForm({ ...form, calories: v })} />
+                <MacroField label={t("pro.protein")}  unit="g"    color="#38bdf8" value={form.protein  ?? ""} onChange={(v) => setForm({ ...form, protein:  v })} />
+                <MacroField label={t("pro.carbs")}    unit="g"    color="#a78bfa" value={form.carbs    ?? ""} onChange={(v) => setForm({ ...form, carbs:    v })} />
+                <MacroField label={t("pro.fat")}      unit="g"    color="#fb7185" value={form.fat      ?? ""} onChange={(v) => setForm({ ...form, fat:      v })} />
               </div>
             </div>
 
@@ -627,7 +633,7 @@ function MyFoodsSheet({
                 color:           canSave ? "#0a0a0a" : "var(--sf-text7)",
               }}
             >
-              {editing ? "Save Changes" : "Save Food"}
+              {editing ? t("pro.saveChanges") : t("pro.saveFood")}
             </button>
           </div>
         </>
@@ -661,6 +667,7 @@ function CustomItemSheet({
   onAdd: (item: OneTimeItem, saveToFoods: boolean) => void;
   onClose: () => void;
 }) {
+  const { t } = useLang();
   const [form, setForm] = useState<CustomItemForm>(() =>
     initial
       ? {
@@ -715,7 +722,7 @@ function CustomItemSheet({
         </div>
 
         <SheetHeader
-          title={initial ? "Edit Custom Item" : "Quick Custom Item"}
+          title={initial ? t("pro.editCustomItem") : t("pro.quickCustomItem")}
           onClose={onClose}
         />
 
@@ -723,7 +730,7 @@ function CustomItemSheet({
           {/* Name */}
           <div>
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
-              Food name
+              {t("pro.foodName")}
             </p>
             <input
               type="text"
@@ -743,7 +750,7 @@ function CustomItemSheet({
           {/* Amount + Unit */}
           <div>
             <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
-              Amount eaten
+              {t("pro.amountEaten")}
             </p>
             <div className="flex gap-2">
               <input
@@ -781,13 +788,13 @@ function CustomItemSheet({
           {/* Macros 2×2 */}
           <div>
             <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
-              Nutrition
+              {t("pro.nutrition")}
             </p>
             <div className="grid grid-cols-2 gap-3">
-              <MacroField label="Calories" unit="kcal" color="#00d2ff" value={form.calories} onChange={(v) => setForm({ ...form, calories: v })} />
-              <MacroField label="Protein"  unit="g"    color="#38bdf8" value={form.protein}  onChange={(v) => setForm({ ...form, protein:  v })} />
-              <MacroField label="Carbs"    unit="g"    color="#a78bfa" value={form.carbs}    onChange={(v) => setForm({ ...form, carbs:    v })} />
-              <MacroField label="Fat"      unit="g"    color="#fb7185" value={form.fat}      onChange={(v) => setForm({ ...form, fat:      v })} />
+              <MacroField label={t("pro.calories")} unit="kcal" color="#00d2ff" value={form.calories} onChange={(v) => setForm({ ...form, calories: v })} />
+              <MacroField label={t("pro.protein")}  unit="g"    color="#38bdf8" value={form.protein}  onChange={(v) => setForm({ ...form, protein:  v })} />
+              <MacroField label={t("pro.carbs")}    unit="g"    color="#a78bfa" value={form.carbs}    onChange={(v) => setForm({ ...form, carbs:    v })} />
+              <MacroField label={t("pro.fat")}      unit="g"    color="#fb7185" value={form.fat}      onChange={(v) => setForm({ ...form, fat:      v })} />
             </div>
           </div>
 
@@ -811,7 +818,7 @@ function CustomItemSheet({
                 )}
               </div>
               <span className="text-sm" style={{ color: "var(--sf-text3)" }}>
-                Save to My Foods for next time
+                {t("pro.saveToMyFoods")}
               </span>
             </button>
           )}
@@ -829,7 +836,7 @@ function CustomItemSheet({
                 color: "var(--sf-text5)",
               }}
             >
-              Cancel
+              {t("pro.cancel")}
             </button>
             <button
               onClick={handleAdd}
@@ -840,7 +847,7 @@ function CustomItemSheet({
                 color:           canAdd ? "#0a0a0a" : "var(--sf-text7)",
               }}
             >
-              {initial ? "Update Item" : "Add to Meal"}
+              {initial ? t("pro.updateItem") : t("pro.addToMeal")}
             </button>
           </div>
         </div>
@@ -858,10 +865,8 @@ function isBI(f: AnyFood): f is BuiltInFood {
   return "category" in f && (f as BuiltInFood).source === "built_in";
 }
 
-// BuiltInFood has all fields the helper functions need — cast is safe at runtime
 function asC(f: AnyFood): CustomFood { return f as unknown as CustomFood; }
 
-// Units shown in the quantity picker (friendlier labels than the meal-builder select)
 function getPickerUnits(food: AnyFood): Array<{ unit: LogUnit; label: string }> {
   const cf = asC(food);
   const units: Array<{ unit: LogUnit; label: string }> = [];
@@ -869,7 +874,6 @@ function getPickerUnits(food: AnyFood): Array<{ unit: LogUnit; label: string }> 
     units.push({ unit: "g",  label: "grams" });
     units.push({ unit: "oz", label: "oz"    });
   }
-  // Add "serving" only for non-gram foods (avoids showing "100g" twice for built-ins)
   if (cf.servingUnit !== "g") {
     units.push({ unit: "serving", label: formatServing(cf) });
   }
@@ -897,6 +901,7 @@ function FoodRow({
   food: AnyFood; isSelected: boolean; isFav: boolean;
   onToggle: () => void; onFavToggle?: () => void;
 }) {
+  const { t } = useLang();
   return (
     <div
       className="flex items-center gap-2 px-5 py-3"
@@ -919,7 +924,7 @@ function FoodRow({
               className="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide"
               style={{ color: "#4ade80", backgroundColor: "rgba(74,222,128,0.08)" }}
             >
-              Built-in
+              {t("pro.builtinBadge")}
             </span>
           )}
         </div>
@@ -939,7 +944,7 @@ function FoodRow({
             color:           isFav ? "#fbbf24" : "var(--sf-text7)",
             backgroundColor: isFav ? "rgba(251,191,36,0.08)" : "transparent",
           }}
-          aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+          aria-label={isFav ? t("pro.removeFavorite") : t("pro.addFavorite")}
         >
           {isFav ? "★" : "☆"}
         </button>
@@ -965,6 +970,7 @@ function QuantitySheet({
   onAdd: (amount: string, unit: LogUnit) => void;
   onClose: () => void;
 }) {
+  const { t } = useLang();
   const cf          = asC(food);
   const pickerUnits = getPickerUnits(food);
   const [unit,   setUnit]   = useState<LogUnit>(() => initialUnit ?? pickerUnits[0]?.unit ?? "serving");
@@ -1001,7 +1007,7 @@ function QuantitySheet({
         {/* Food name */}
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            How much did you eat?
+            {t("pro.howMuch")}
           </p>
           <p className="mt-1 text-lg font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
             {food.name}
@@ -1011,12 +1017,12 @@ function QuantitySheet({
               className="mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
               style={{ color: "#4ade80", backgroundColor: "rgba(74,222,128,0.08)" }}
             >
-              Built-in
+              {t("pro.builtinBadge")}
             </span>
           )}
         </div>
 
-        {/* Amount + unit — vertical stack, both full-width, no horizontal overflow */}
+        {/* Amount + unit */}
         <div className="flex flex-col gap-3" style={{ overflow: "hidden" }}>
           <input
             type="number"
@@ -1083,7 +1089,7 @@ function QuantitySheet({
               color: "var(--sf-text5)",
             }}
           >
-            Cancel
+            {t("pro.cancel")}
           </button>
           <button
             onClick={() => { if (canAdd) onAdd(amount, unit); }}
@@ -1094,7 +1100,7 @@ function QuantitySheet({
               color:           canAdd ? "#0a0a0a" : "var(--sf-text7)",
             }}
           >
-            {isEditing ? "Update Amount" : "Add to Meal"}
+            {isEditing ? t("pro.updateAmount") : t("pro.addToMeal")}
           </button>
         </div>
       </div>
@@ -1116,6 +1122,7 @@ function MealBuilderSheet({
   onSaveFood: (food: CustomFood) => void;
 }) {
   const { dispatch } = useApp();
+  const { t } = useLang();
 
   const [builtinFavIds, setBuiltinFavIds] = useState<string[]>([]);
   useEffect(() => { setBuiltinFavIds(loadBuiltinFavorites()); }, []);
@@ -1133,6 +1140,13 @@ function MealBuilderSheet({
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [editingCustom,  setEditingCustom]  = useState<OneTimeItem | null>(null);
 
+  const TABS: Array<{ id: Tab; label: string }> = [
+    { id: "favorites", label: t("pro.favTab")      },
+    { id: "builtin",   label: t("pro.builtinTab")  },
+    { id: "myfoods",   label: t("pro.myFoodsTab")  },
+    { id: "all",       label: t("pro.allTab")      },
+  ];
+
   const sl = search.toLowerCase().trim();
   function matches(f: AnyFood) {
     if (!sl) return true;
@@ -1142,8 +1156,6 @@ function MealBuilderSheet({
     );
   }
 
-  // Tapping a new food opens the quantity picker.
-  // Tapping an already-selected food re-opens the picker to edit the amount.
   function handleFoodTap(food: AnyFood) {
     if (selected.has(food.id)) {
       setIsEditing(true);
@@ -1307,7 +1319,7 @@ function MealBuilderSheet({
         return (
           <div className="py-10 text-center">
             <p className="text-xs" style={{ color: "var(--sf-text5)" }}>
-              No foods match &ldquo;{search}&rdquo;
+              {t("pro.noFoodsMatch", { search })}
             </p>
           </div>
         );
@@ -1332,7 +1344,7 @@ function MealBuilderSheet({
           ))}
           {myFoodsFiltered.length > 0 && (
             <>
-              <CatHeader title="My Foods" />
+              <CatHeader title={t("pro.myFoodsTab")} />
               {myFoodsFiltered.map((food) => (
                 <FoodRow
                   key={food.id}
@@ -1353,16 +1365,16 @@ function MealBuilderSheet({
       if (foods.length === 0) {
         return (
           <div className="flex flex-col items-center justify-center px-8 py-12 text-center">
-            <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>No custom foods yet</p>
+            <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>{t("pro.noCustomFoods")}</p>
             <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>
-              Add your own foods in My Foods, or use Built-in foods.
+              {t("pro.noCustomFoodsHint")}
             </p>
             <button
               onClick={onGoToMyFoods}
               className="mt-5 rounded-2xl px-6 py-3 text-sm font-bold"
               style={{ backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" }}
             >
-              Open My Foods →
+              {t("pro.openMyFoods")}
             </button>
           </div>
         );
@@ -1371,7 +1383,7 @@ function MealBuilderSheet({
         return (
           <div className="py-10 text-center">
             <p className="text-xs" style={{ color: "var(--sf-text5)" }}>
-              No foods match &ldquo;{search}&rdquo;
+              {t("pro.noFoodsMatch", { search })}
             </p>
           </div>
         );
@@ -1398,12 +1410,12 @@ function MealBuilderSheet({
     if (customFavs.length === 0 && builtinFavs.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center px-8 py-12 text-center">
-          <p className="text-sm font-bold" style={{ color: "var(--sf-text5)" }}>
-            {sl ? `No favorites match "${search}"` : "No favorites yet"}
+          <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
+            {sl ? t("pro.noFavoritesMatch", { search }) : t("pro.noFavorites")}
           </p>
           {!sl && (
             <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text7)" }}>
-              Star built-in foods from the Built-in tab, or star your foods in My Foods.
+              {t("pro.noFavoritesHint")}
             </p>
           )}
           <button
@@ -1411,7 +1423,7 @@ function MealBuilderSheet({
             className="mt-4 rounded-2xl px-5 py-2.5 text-xs font-bold"
             style={{ backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" }}
           >
-            Browse Built-in →
+            {t("pro.browseBuiltin")}
           </button>
         </div>
       );
@@ -1420,7 +1432,7 @@ function MealBuilderSheet({
       <>
         {builtinFavs.length > 0 && (
           <>
-            <CatHeader title="Built-in" />
+            <CatHeader title={t("pro.builtinTab")} />
             {builtinFavs.map((food) => (
               <FoodRow
                 key={food.id}
@@ -1435,7 +1447,7 @@ function MealBuilderSheet({
         )}
         {customFavs.length > 0 && (
           <>
-            <CatHeader title="My Foods" />
+            <CatHeader title={t("pro.myFoodsTab")} />
             {customFavs.map((food) => (
               <FoodRow
                 key={food.id}
@@ -1451,20 +1463,12 @@ function MealBuilderSheet({
     );
   }
 
-  // ── Tab definitions ──
-  const TABS: Array<{ id: Tab; label: string }> = [
-    { id: "favorites", label: "★ Fav"    },
-    { id: "builtin",   label: "Built-in" },
-    { id: "myfoods",   label: "My Foods" },
-    { id: "all",       label: "All"      },
-  ];
-
   const canLog = selectedFoods.length > 0 || oneTimeItems.length > 0;
 
   return (
     <>
     <SheetOverlay onClose={onClose}>
-      <SheetHeader title="Build Meal" onClose={onClose} />
+      <SheetHeader title={t("pro.buildMeal")} onClose={onClose} />
 
       {/* Tabs + Search */}
       <div className="shrink-0 px-4 pt-3 pb-2 space-y-2">
@@ -1472,32 +1476,32 @@ function MealBuilderSheet({
           className="flex overflow-hidden rounded-xl"
           style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
         >
-          {TABS.map((t, i) => (
+          {TABS.map((t_item, i) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={t_item.id}
+              onClick={() => setTab(t_item.id)}
               className="flex-1 py-2 text-xs font-bold transition-colors"
               style={{
                 borderLeft:      i > 0 ? "1px solid var(--sf-pill)" : undefined,
                 backgroundColor:
-                  tab === t.id
-                    ? t.id === "favorites"
+                  tab === t_item.id
+                    ? t_item.id === "favorites"
                       ? "rgba(251,191,36,0.12)"
                       : "rgba(0,210,255,0.08)"
                     : "transparent",
                 color:
-                  tab === t.id
-                    ? t.id === "favorites" ? "#fbbf24" : "#00d2ff"
+                  tab === t_item.id
+                    ? t_item.id === "favorites" ? "#fbbf24" : "#00d2ff"
                     : "var(--sf-text5)",
               }}
             >
-              {t.label}
+              {t_item.label}
             </button>
           ))}
         </div>
         <input
           type="text"
-          placeholder="Search foods…"
+          placeholder={t("pro.searchFoods")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full rounded-xl px-4 py-2.5 text-sm outline-none"
@@ -1522,13 +1526,13 @@ function MealBuilderSheet({
               color: "#a78bfa",
             }}
           >
-            + Custom item
+            {t("pro.customItem")}
           </button>
         </div>
         {renderList()}
       </div>
 
-      {/* Your Meal — sticky section, always above footer when foods are selected */}
+      {/* Your Meal */}
       {(selectedFoods.length > 0 || oneTimeItems.length > 0) && (
         <div
           className="shrink-0 overflow-y-auto"
@@ -1543,7 +1547,7 @@ function MealBuilderSheet({
             style={{ backgroundColor: "var(--sf-bg)", borderBottom: "1px solid var(--sf-border)" }}
           >
             <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-              Your Meal
+              {t("pro.yourMeal")}
             </p>
             <p className="text-xs font-black" style={{ color: "var(--sf-text1)" }}>
               {grandTotal.calories}
@@ -1567,7 +1571,6 @@ function MealBuilderSheet({
                 className="flex items-center gap-2 px-4 py-2.5"
                 style={{ borderBottom: "1px solid var(--sf-border)" }}
               >
-                {/* Tap row to re-open quantity picker */}
                 <button
                   className="flex-1 min-w-0 text-left"
                   onClick={() => handleFoodTap(food)}
@@ -1581,7 +1584,6 @@ function MealBuilderSheet({
                   </p>
                 </button>
 
-                {/* Edit button */}
                 <button
                   onClick={() => handleFoodTap(food)}
                   className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl"
@@ -1594,7 +1596,6 @@ function MealBuilderSheet({
                   </svg>
                 </button>
 
-                {/* Remove button */}
                 <button
                   onClick={() => removeFood(food.id)}
                   className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl text-base font-black leading-none"
@@ -1624,7 +1625,7 @@ function MealBuilderSheet({
                     className="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide"
                     style={{ color: "#a78bfa", backgroundColor: "rgba(168,139,250,0.1)" }}
                   >
-                    custom
+                    {t("pro.customBadge")}
                   </span>
                 </p>
                 <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
@@ -1669,7 +1670,7 @@ function MealBuilderSheet({
             color:           canLog ? "#0a0a0a" : "var(--sf-text7)",
           }}
         >
-          {canLog ? `Add ${grandTotal.calories} cal to Log` : "Select foods above"}
+          {canLog ? t("pro.addCalToLog", { cal: String(grandTotal.calories) }) : t("pro.selectFoods")}
         </button>
       </div>
     </SheetOverlay>
@@ -1697,6 +1698,7 @@ function MealBuilderSheet({
 // ─── Pro panel (bottom bar) ───────────────────────────────────────────────────
 
 export default function ProPanel() {
+  const { t } = useLang();
   const [openSheet, setOpenSheet] = useState<null | "foods" | "builder">(null);
   const [proFoods, setProFoods]   = useState<CustomFood[]>([]);
 
@@ -1736,7 +1738,7 @@ export default function ProPanel() {
             <line x1="16" y1="13" x2="8" y2="13" />
             <line x1="16" y1="17" x2="8" y2="17" />
           </svg>
-          <span className="text-sm font-bold">My Foods</span>
+          <span className="text-sm font-bold">{t("pro.myFoods")}</span>
         </button>
 
         <button
@@ -1748,7 +1750,7 @@ export default function ProPanel() {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          <span className="text-sm font-bold">Add Meal</span>
+          <span className="text-sm font-bold">{t("pro.addMeal")}</span>
         </button>
       </div>
 

@@ -17,6 +17,7 @@ import {
   GOAL_CAL_OFFSET,
 } from "@/lib/profile";
 import DumbbellLogo from "@/components/DumbbellLogo";
+import { useLang } from "@/context/LanguageContext";
 
 const TOTAL_STEPS = 5;
 
@@ -107,33 +108,6 @@ function Label({ children }: { children: React.ReactNode }) {
   return <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>{children}</p>;
 }
 
-const GENDER_OPTS   = [{ value: "male", label: "Male" }, { value: "female", label: "Female" }];
-const GOAL_OPTS     = [{ value: "lose", label: "Lose weight" }, { value: "maintain", label: "Maintain" }, { value: "gain", label: "Gain muscle" }];
-const ACTIVITY_OPTS = [
-  { value: "sedentary",   label: "Sedentary" },
-  { value: "light",       label: "Light" },
-  { value: "moderate",    label: "Moderate" },
-  { value: "active",      label: "Active" },
-  { value: "very_active", label: "Very active" },
-];
-const ACTIVITY_DESC: Record<string, string> = {
-  sedentary:   "Desk job, little or no exercise",
-  light:       "Light exercise 1–2 days/week",
-  moderate:    "Moderate exercise 3–5 days/week",
-  active:      "Hard exercise 6–7 days/week",
-  very_active: "Athlete or physical job",
-};
-const DIET_OPTS = [
-  { value: "vegetarian", label: "Vegetarian" }, { value: "vegan", label: "Vegan" },
-  { value: "kosher", label: "Kosher" }, { value: "halal", label: "Halal" },
-  { value: "gluten_free", label: "Gluten-Free" }, { value: "dairy_free", label: "Dairy-Free" },
-  { value: "nut_free", label: "Nut-Free" }, { value: "low_carb", label: "Low-Carb" },
-  { value: "keto", label: "Keto" }, { value: "paleo", label: "Paleo" },
-  { value: "no_pork", label: "No Pork" }, { value: "no_shellfish", label: "No Shellfish" },
-];
-
-// ─── Error helper ─────────────────────────────────────────────────────────────
-
 function getErrorMessage(err: unknown): string {
   if (!err) return "Unknown error";
   if (err instanceof Error) return err.message;
@@ -155,11 +129,11 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { dispatch } = useApp();
+  const { t } = useLang();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [profile, setProfile] = useState<Profile>({ ...DEFAULT_PROFILE });
-  // String states so the user can clear and retype without getting stuck at 0
   const [calInput, setCalInput] = useState(String(DEFAULT_PROFILE.calorieGoal));
   const [proteinInput, setProteinInput] = useState(String(DEFAULT_PROFILE.proteinGoalG));
 
@@ -167,13 +141,44 @@ export default function OnboardingPage() {
   const rec         = calculateRecommended(profile);
   const age         = calculateAge(profile.dateOfBirth);
 
-  // Keep string inputs in sync when profile recalculates (e.g. user picks a new goal)
   useEffect(() => { setCalInput(String(profile.calorieGoal)); }, [profile.calorieGoal]);
   useEffect(() => { setProteinInput(String(profile.proteinGoalG)); }, [profile.proteinGoalG]);
 
   const dispHeight  = profile.heightCm    === "" ? "" : isImperial ? cmToIn(profile.heightCm)    : profile.heightCm;
   const dispWeight  = profile.weightKg    === "" ? "" : isImperial ? kgToLb(profile.weightKg)    : profile.weightKg;
   const dispGoalWt  = profile.goalWeightKg=== "" ? "" : isImperial ? kgToLb(profile.goalWeightKg): profile.goalWeightKg;
+
+  // Option lists built from translations
+  const GENDER_OPTS = [
+    { value: "male",   label: t("common.gender.male") },
+    { value: "female", label: t("common.gender.female") },
+  ];
+  const GOAL_OPTS = [
+    { value: "lose",     label: t("common.goal.lose") },
+    { value: "maintain", label: t("common.goal.maintain") },
+    { value: "gain",     label: t("common.goal.gain") },
+  ];
+  const ACTIVITY_OPTS = [
+    { value: "sedentary",   label: t("common.activity.sedentary") },
+    { value: "light",       label: t("common.activity.light") },
+    { value: "moderate",    label: t("common.activity.moderate") },
+    { value: "active",      label: t("common.activity.active") },
+    { value: "very_active", label: t("common.activity.very_active") },
+  ];
+  const DIET_OPTS = [
+    { value: "vegetarian",   label: t("common.diet.vegetarian") },
+    { value: "vegan",        label: t("common.diet.vegan") },
+    { value: "kosher",       label: t("common.diet.kosher") },
+    { value: "halal",        label: t("common.diet.halal") },
+    { value: "gluten_free",  label: t("common.diet.gluten_free") },
+    { value: "dairy_free",   label: t("common.diet.dairy_free") },
+    { value: "nut_free",     label: t("common.diet.nut_free") },
+    { value: "low_carb",     label: t("common.diet.low_carb") },
+    { value: "keto",         label: t("common.diet.keto") },
+    { value: "paleo",        label: t("common.diet.paleo") },
+    { value: "no_pork",      label: t("common.diet.no_pork") },
+    { value: "no_shellfish", label: t("common.diet.no_shellfish") },
+  ];
 
   function update(updates: Partial<Profile>) {
     setProfile((prev) => {
@@ -194,7 +199,7 @@ export default function OnboardingPage() {
   }
 
   async function finish() {
-    if (!user) { setSaveError("Not signed in. Please log in again."); return; }
+    if (!user) { setSaveError(t("onboarding.notSignedIn")); return; }
     setSaving(true);
     setSaveError("");
     try {
@@ -237,7 +242,9 @@ export default function OnboardingPage() {
             style={{ width: `${pct}%`, backgroundColor: "#00d2ff", boxShadow: "0 0 8px rgba(0,210,255,0.5)" }}
           />
         </div>
-        <p className="mt-2 text-xs" style={{ color: "var(--sf-text5)" }}>Step {step} of {TOTAL_STEPS}</p>
+        <p className="mt-2 text-xs" style={{ color: "var(--sf-text5)" }}>
+          {t("onboarding.step", { step: String(step), total: String(TOTAL_STEPS) })}
+        </p>
       </div>
 
       {/* Content */}
@@ -247,13 +254,13 @@ export default function OnboardingPage() {
         {step === 1 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Tell us about yourself</p>
-              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>We use this to personalize your goals</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>{t("onboarding.step1Title")}</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>{t("onboarding.step1Subtitle")}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label>Date of birth</Label>
+                <Label>{t("onboarding.dateOfBirth")}</Label>
                 <input
                   type="date"
                   value={profile.dateOfBirth}
@@ -263,11 +270,15 @@ export default function OnboardingPage() {
                   onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
                 />
-                {age && <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>Age: <span style={{ color: "#00d2ff" }}>{age}</span></p>}
+                {age && (
+                  <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>
+                    {t("onboarding.age", { age: String(age) })}
+                  </p>
+                )}
               </div>
 
               <div>
-                <Label>Gender</Label>
+                <Label>{t("onboarding.gender")}</Label>
                 <PillGroup options={GENDER_OPTS} value={profile.gender} onChange={(v) => update({ gender: v as Gender })} />
               </div>
             </div>
@@ -278,44 +289,43 @@ export default function OnboardingPage() {
         {step === 2 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Your body</p>
-              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>We'll calculate your calorie needs</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>{t("onboarding.step2Title")}</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>{t("onboarding.step2Subtitle")}</p>
             </div>
 
             <div className="space-y-4">
-              {/* Units */}
               <div>
-                <Label>Units</Label>
+                <Label>{t("onboarding.units")}</Label>
                 <div className="flex overflow-hidden rounded-2xl" style={{ border: "1px solid var(--sf-border2)" }}>
                   <button type="button" onClick={() => update({ unitSystem: "metric" })}
                     className="flex-1 py-3 text-sm font-bold transition-colors"
                     style={!isImperial ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" } : { backgroundColor: "var(--sf-input)", color: "var(--sf-text4)" }}>
-                    Metric (kg/cm)
+                    {t("onboarding.metric")}
                   </button>
                   <button type="button" onClick={() => update({ unitSystem: "imperial" })}
                     className="flex-1 py-3 text-sm font-bold transition-colors"
                     style={isImperial ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" } : { backgroundColor: "var(--sf-input)", color: "var(--sf-text4)" }}>
-                    Imperial (lb/in)
+                    {t("onboarding.imperial")}
                   </button>
                 </div>
               </div>
 
               <div>
-                <Label>Height</Label>
+                <Label>{t("onboarding.height")}</Label>
                 <NumInput value={dispHeight} placeholder={isImperial ? "70" : "175"}
                   unit={isImperial ? "in" : "cm"}
                   onChange={(v) => update({ heightCm: v === "" ? "" : isImperial ? inToCm(v) : v })} />
               </div>
 
               <div>
-                <Label>Current weight</Label>
+                <Label>{t("onboarding.currentWeight")}</Label>
                 <NumInput value={dispWeight} placeholder={isImperial ? "170" : "77"}
                   unit={isImperial ? "lb" : "kg"}
                   onChange={(v) => update({ weightKg: v === "" ? "" : isImperial ? lbToKg(v) : v })} />
               </div>
 
               <div>
-                <Label>Goal weight</Label>
+                <Label>{t("onboarding.goalWeight")}</Label>
                 <NumInput value={dispGoalWt} placeholder={isImperial ? "155" : "70"}
                   unit={isImperial ? "lb" : "kg"}
                   onChange={(v) => update({ goalWeightKg: v === "" ? "" : isImperial ? lbToKg(v) : v })} />
@@ -328,23 +338,23 @@ export default function OnboardingPage() {
         {step === 3 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Your goal</p>
-              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>What are you working toward?</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>{t("onboarding.step3Title")}</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>{t("onboarding.step3Subtitle")}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label>I want to</Label>
+                <Label>{t("onboarding.iWantTo")}</Label>
                 <PillGroup options={GOAL_OPTS} value={profile.goal} onChange={(v) => update({ goal: v as FitnessGoal })} />
               </div>
 
               <div>
-                <Label>Activity level</Label>
+                <Label>{t("onboarding.activityLevel")}</Label>
                 <PillGroup options={ACTIVITY_OPTS} value={profile.activityLevel}
                   onChange={(v) => update({ activityLevel: v as ActivityLevel })} />
                 {profile.activityLevel && (
                   <p className="mt-2 text-xs" style={{ color: "var(--sf-text5)" }}>
-                    {ACTIVITY_DESC[profile.activityLevel]}
+                    {t(`common.activityDesc.${profile.activityLevel}`)}
                   </p>
                 )}
               </div>
@@ -356,35 +366,36 @@ export default function OnboardingPage() {
         {step === 4 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Your targets</p>
-              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>Based on your stats. You can override anytime.</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>{t("onboarding.step4Title")}</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>{t("onboarding.step4Subtitle")}</p>
             </div>
 
             <div className="space-y-4">
-              {/* Recommendation */}
               <div className="rounded-2xl px-5 py-4" style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}>
                 {rec ? (
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>Recommended</p>
+                      <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
+                        {t("onboarding.recommended")}
+                      </p>
                       <p className="mt-0.5 text-2xl font-black" style={{ color: "#00d2ff" }}>
                         {rec.calories.toLocaleString()}
-                        <span className="ml-1 text-sm font-normal" style={{ color: "var(--sf-text4)" }}>cal/day</span>
+                        <span className="ml-1 text-sm font-normal" style={{ color: "var(--sf-text4)" }}>{t("onboarding.calPerDay")}</span>
                       </p>
                     </div>
                     <p className="text-right text-xs leading-snug" style={{ color: "var(--sf-text5)" }}>
-                      Based on your<br />stats &amp; goal
+                      {t("onboarding.basedOnStats")}
                     </p>
                   </div>
                 ) : (
                   <p className="text-sm" style={{ color: "var(--sf-text4)" }}>
-                    Complete your stats in steps 1–3 to see a recommendation.
+                    {t("onboarding.completeStats")}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label>Daily calorie goal</Label>
+                <Label>{t("onboarding.dailyCalGoal")}</Label>
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
@@ -406,7 +417,7 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <Label>Daily protein goal</Label>
+                <Label>{t("onboarding.dailyProteinGoal")}</Label>
                 <div className="flex items-center gap-3">
                   <input
                     type="number"
@@ -422,7 +433,11 @@ export default function OnboardingPage() {
                   />
                   <span className="text-sm" style={{ color: "var(--sf-text4)" }}>g</span>
                 </div>
-                {rec && <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>Recommended: {rec.protein}g</p>}
+                {rec && (
+                  <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>
+                    {t("onboarding.recommendedProtein", { g: String(rec.protein) })}
+                  </p>
+                )}
               </div>
 
               {/* Weight rate estimate */}
@@ -445,21 +460,27 @@ export default function OnboardingPage() {
                   >
                     {isLoss ? (
                       <p className="text-sm" style={{ color: "#4ade80" }}>
-                        At {profile.calorieGoal.toLocaleString()} cal/day, estimated loss is about{" "}
-                        <strong>{Math.abs(dispChange).toFixed(1)} {unit}/week</strong>.
+                        {t("onboarding.estimateLoss", {
+                          cal: profile.calorieGoal.toLocaleString(),
+                          amount: Math.abs(dispChange).toFixed(1),
+                          unit,
+                        })}
                       </p>
                     ) : isGain ? (
                       <p className="text-sm" style={{ color: "#fb923c" }}>
-                        At {profile.calorieGoal.toLocaleString()} cal/day, estimated gain is about{" "}
-                        <strong>{dispChange.toFixed(1)} {unit}/week</strong>.
+                        {t("onboarding.estimateGain", {
+                          cal: profile.calorieGoal.toLocaleString(),
+                          amount: dispChange.toFixed(1),
+                          unit,
+                        })}
                       </p>
                     ) : (
                       <p className="text-sm" style={{ color: "var(--sf-text4)" }}>
-                        At {profile.calorieGoal.toLocaleString()} cal/day, you&apos;re approximately maintaining your weight.
+                        {t("onboarding.estimateMaintain", { cal: profile.calorieGoal.toLocaleString() })}
                       </p>
                     )}
                     <p className="text-xs" style={{ color: "var(--sf-text5)" }}>
-                      Estimate only — actual results vary by individual.
+                      {t("onboarding.estimateNote")}
                     </p>
                   </div>
                 );
@@ -472,22 +493,22 @@ export default function OnboardingPage() {
         {step === 5 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Food preferences</p>
-              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>Helps the AI make better suggestions</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>{t("onboarding.step5Title")}</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>{t("onboarding.step5Subtitle")}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label>Dietary restrictions</Label>
+                <Label>{t("onboarding.dietaryRestrictions")}</Label>
                 <MultiPill options={DIET_OPTS} value={profile.dietRules}
                   onChange={(v) => setProfile((p) => ({ ...p, dietRules: v }))} />
               </div>
 
               <div>
-                <Label>Foods you enjoy</Label>
+                <Label>{t("onboarding.foodsYouEnjoy")}</Label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. chicken, rice, salads, yogurt…"
+                  placeholder={t("onboarding.foodsEnjoyPlaceholder")}
                   value={profile.foodPreferences ?? ""}
                   onChange={(e) => setProfile((p) => ({ ...p, foodPreferences: e.target.value }))}
                   style={{ ...inputStyle, resize: "none", lineHeight: "1.5" }}
@@ -497,10 +518,10 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <Label>Foods you dislike</Label>
+                <Label>{t("onboarding.foodsYouDislike")}</Label>
                 <textarea
                   rows={2}
-                  placeholder="e.g. mushrooms, olives, spicy food…"
+                  placeholder={t("onboarding.foodsDislikePlaceholder")}
                   value={profile.dislikedFoods ?? ""}
                   onChange={(e) => setProfile((p) => ({ ...p, dislikedFoods: e.target.value }))}
                   style={{ ...inputStyle, resize: "none", lineHeight: "1.5" }}
@@ -531,7 +552,7 @@ export default function OnboardingPage() {
             className="w-full rounded-2xl py-4 text-sm font-black transition-all active:scale-[0.98]"
             style={{ backgroundColor: "#00d2ff", color: "#0a0a0a" }}
           >
-            Continue
+            {t("onboarding.continue")}
           </button>
         ) : (
           <button
@@ -541,7 +562,7 @@ export default function OnboardingPage() {
             className="w-full rounded-2xl py-4 text-sm font-black transition-all active:scale-[0.98] disabled:opacity-60"
             style={{ backgroundColor: "#00d2ff", color: "#0a0a0a" }}
           >
-            {saving ? "Saving…" : "Get started"}
+            {saving ? t("onboarding.saving") : t("onboarding.getStarted")}
           </button>
         )}
         {step > 1 && (
@@ -551,7 +572,7 @@ export default function OnboardingPage() {
             className="w-full rounded-2xl py-3 text-sm font-semibold"
             style={{ color: "var(--sf-text4)" }}
           >
-            Back
+            {t("onboarding.back")}
           </button>
         )}
         {step < TOTAL_STEPS && (
@@ -561,7 +582,7 @@ export default function OnboardingPage() {
             className="w-full text-xs"
             style={{ color: "var(--sf-text6)" }}
           >
-            Skip for now
+            {t("onboarding.skipForNow")}
           </button>
         )}
       </div>

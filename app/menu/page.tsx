@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { loadProfile, DEFAULT_PROFILE } from "@/lib/profile";
 import type { Profile } from "@/lib/profile";
+import { useLang } from "@/context/LanguageContext";
 import {
   MEAL_SLOTS,
   TIER_FOODS,
@@ -43,18 +44,6 @@ const SHOW_LIMIT = 5;
 function parseExcludes(input: string): string[] {
   return input.split(",").map((s) => s.trim()).filter(Boolean);
 }
-
-const TIER_CONFIG: {
-  tier: MealTier;
-  label: string;
-  meals: string;
-  slotIdx: number;
-  color: string;
-}[] = [
-  { tier: "snack", label: "Light Snack", meals: "Meals 1 & 5", slotIdx: 0, color: "#a78bfa" },
-  { tier: "small", label: "Small Meal",  meals: "Meals 2 & 4", slotIdx: 1, color: "#38bdf8" },
-  { tier: "main",  label: "Main Lunch",  meals: "Meal 3",       slotIdx: 2, color: "#00d2ff" },
-];
 
 // ─── Food row ─────────────────────────────────────────────────────────────────
 
@@ -122,6 +111,7 @@ function FoodSection({
   items: FoodOption[];
   chips?: boolean;
 }) {
+  const { t } = useLang();
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? items : items.slice(0, SHOW_LIMIT);
   const hiddenCount = items.length - SHOW_LIMIT;
@@ -136,7 +126,7 @@ function FoodSection({
       </p>
       {items.length === 0 ? (
         <p className="pb-2 text-xs" style={{ color: "var(--sf-text7)" }}>
-          No options match your current filters.
+          {t("menu.noOptions")}
         </p>
       ) : chips ? (
         <div className="flex flex-wrap gap-1.5 pb-2">
@@ -160,7 +150,7 @@ function FoodSection({
               style={{ color }}
               onClick={() => setShowAll(true)}
             >
-              + {hiddenCount} more
+              {t("menu.moreItems", { count: String(hiddenCount) })}
             </button>
           )}
           {showAll && hiddenCount > 0 && (
@@ -169,7 +159,7 @@ function FoodSection({
               style={{ color: "var(--sf-text6)" }}
               onClick={() => setShowAll(false)}
             >
-              Show less
+              {t("menu.showLess")}
             </button>
           )}
         </div>
@@ -199,6 +189,7 @@ function AddFoodForm({
   color: string;
   onAdd: (food: FoodOption) => void;
 }) {
+  const { t } = useLang();
   const [open,        setOpen]        = useState(false);
   const [name,        setName]        = useState("");
   const [loading,     setLoading]     = useState(false);
@@ -206,7 +197,6 @@ function AddFoodForm({
   const [hasSearched, setHasSearched] = useState(false);
   const [showManual,  setShowManual]  = useState(false);
 
-  // Manual fallback state
   const [mPortion, setMPortion] = useState("");
   const [mCal,     setMCal]     = useState("");
   const [mPro,     setMPro]     = useState("");
@@ -248,7 +238,7 @@ function AddFoodForm({
     setMPortion(""); setMCal(""); setMPro("");
   }
 
-  const mCalNum  = parseFloat(mCal) || 0;
+  const mCalNum      = parseFloat(mCal) || 0;
   const canManualAdd = name.trim() !== "" && mCalNum > 0;
 
   function handleManualAdd() {
@@ -270,7 +260,7 @@ function AddFoodForm({
         style={{ border: `1px dashed ${color}44`, color: `${color}88` }}
         onClick={() => setOpen(true)}
       >
-        + Add a food to this meal
+        {t("menu.addFood")}
       </button>
     );
   }
@@ -283,12 +273,12 @@ function AddFoodForm({
       {/* Name + lookup */}
       <div>
         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-          Food name
+          {t("menu.foodName")}
         </p>
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="e.g. chicken wings, steak, salmon…"
+            placeholder={t("menu.foodNamePlaceholder")}
             value={name}
             onChange={(e) => { setName(e.target.value); setResults([]); setHasSearched(false); setShowManual(false); }}
             onKeyDown={(e) => e.key === "Enter" && handleLookup()}
@@ -309,20 +299,20 @@ function AddFoodForm({
               color: name.trim() ? color : "var(--sf-text7)",
             }}
           >
-            {loading ? "…" : "Look up"}
+            {loading ? "…" : t("menu.lookUp")}
           </button>
         </div>
       </div>
 
       {/* Results list */}
       {loading && (
-        <p className="text-center text-xs" style={{ color: "var(--sf-text6)" }}>Searching USDA…</p>
+        <p className="text-center text-xs" style={{ color: "var(--sf-text6)" }}>{t("menu.searching")}</p>
       )}
 
       {!loading && hasSearched && results.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color }}>
-            Tap a result to add it
+            {t("menu.tapResult")}
           </p>
           {results.map((match) => (
             <button
@@ -361,7 +351,7 @@ function AddFoodForm({
               className="pt-0.5 text-[11px]"
               style={{ color: "var(--sf-text6)" }}
             >
-              None of these — enter manually
+              {t("menu.noneManually")}
             </button>
           )}
         </div>
@@ -370,7 +360,7 @@ function AddFoodForm({
       {!loading && hasSearched && results.length === 0 && (
         <div className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--sf-border)" }}>
           <p className="text-xs font-semibold" style={{ color: "var(--sf-text4)" }}>
-            No USDA results for &ldquo;{name}&rdquo;
+            {t("menu.noResults", { name })}
           </p>
           {!showManual && (
             <button
@@ -378,7 +368,7 @@ function AddFoodForm({
               className="mt-1 text-[11px] font-bold"
               style={{ color }}
             >
-              Enter manually →
+              {t("menu.enterManually")}
             </button>
           )}
         </div>
@@ -391,11 +381,11 @@ function AddFoodForm({
           style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
         >
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Manual entry
+            {t("menu.manualEntry")}
           </p>
           <input
             type="text"
-            placeholder="Portion (e.g. 200g, 1 cup)"
+            placeholder={t("menu.portionPlaceholder")}
             value={mPortion}
             onChange={(e) => setMPortion(e.target.value)}
             className="w-full rounded-xl px-3 py-2 text-xs outline-none"
@@ -407,7 +397,7 @@ function AddFoodForm({
           />
           <div className="flex gap-2">
             <div className="flex-1">
-              <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text6)" }}>Calories *</p>
+              <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text6)" }}>{t("menu.caloriesRequired")}</p>
               <input
                 type="number"
                 inputMode="decimal"
@@ -423,7 +413,7 @@ function AddFoodForm({
               />
             </div>
             <div className="flex-1">
-              <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text6)" }}>Protein (g)</p>
+              <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text6)" }}>{t("menu.proteinG")}</p>
               <input
                 type="number"
                 inputMode="decimal"
@@ -448,7 +438,7 @@ function AddFoodForm({
               color: canManualAdd ? color : "var(--sf-text7)",
             }}
           >
-            Add to {tierLabel}
+            {t("menu.addTo", { tier: tierLabel })}
           </button>
         </div>
       )}
@@ -459,7 +449,7 @@ function AddFoodForm({
         className="w-full rounded-xl py-2 text-xs font-bold"
         style={{ backgroundColor: "var(--sf-border)", color: "var(--sf-text5)" }}
       >
-        Cancel
+        {t("menu.cancel")}
       </button>
     </div>
   );
@@ -516,6 +506,19 @@ function CollapsibleCard({
 export default function MenuPage() {
   const { state } = useApp();
   const { entries, goals } = state;
+  const { t } = useLang();
+
+  const TIER_CONFIG: {
+    tier: MealTier;
+    label: string;
+    meals: string;
+    slotIdx: number;
+    color: string;
+  }[] = [
+    { tier: "snack", label: t("menu.lightSnack"), meals: t("menu.meals1and5"), slotIdx: 0, color: "#a78bfa" },
+    { tier: "small", label: t("menu.smallMeal"),  meals: t("menu.meals2and4"), slotIdx: 1, color: "#38bdf8" },
+    { tier: "main",  label: t("menu.mainLunch"),  meals: t("menu.meal3"),      slotIdx: 2, color: "#00d2ff" },
+  ];
 
   const [profile, setProfile]       = useState<Profile>(DEFAULT_PROFILE);
   const [customFoods, setCustom]    = useState<CustomFoods>({ snack: [], small: [], main: [] });
@@ -536,10 +539,9 @@ export default function MenuPage() {
   const overGoal     = eaten > goals.calories;
 
   const excludes   = parseExcludes(excludeInput);
-  const activeCfg  = TIER_CONFIG.find((t) => t.tier === activeTier)!;
+  const activeCfg  = TIER_CONFIG.find((cfg) => cfg.tier === activeTier)!;
   const activeSlot = MEAL_SLOTS[activeCfg.slotIdx];
   const { min: calMin, max: calMax } = getMealCalRange(goals.calories, activeSlot);
-  const calTarget  = Math.round((calMin + calMax) / 2);
   const foods      = TIER_FOODS[activeTier];
 
   function getFiltered(options: FoodOption[]): FoodOption[] {
@@ -572,10 +574,10 @@ export default function MenuPage() {
         <div className="flex items-end justify-between px-1">
           <div>
             <p className="text-[22px] font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
-              Mix &amp; Match
+              {t("menu.title")}
             </p>
             <p className="text-xs" style={{ color: "var(--sf-text6)" }}>
-              Pick one per group per meal
+              {t("menu.subtitle")}
             </p>
           </div>
           {profile.dietRules.length > 0 && (
@@ -583,7 +585,7 @@ export default function MenuPage() {
               className="rounded-full px-2.5 py-1 text-[10px] font-bold"
               style={{ backgroundColor: "rgba(167,139,250,0.1)", color: "#a78bfa" }}
             >
-              {profile.dietRules.length} filter{profile.dietRules.length > 1 ? "s" : ""} on
+              {t("menu.filtersOn", { count: String(profile.dietRules.length), s: profile.dietRules.length > 1 ? "s" : "" })}
             </span>
           )}
         </div>
@@ -598,7 +600,7 @@ export default function MenuPage() {
               className="text-[10px] font-bold uppercase tracking-widest"
               style={{ color: "var(--sf-text6)" }}
             >
-              Goal
+              {t("menu.goal")}
             </p>
             <p className="text-base font-black" style={{ color: "var(--sf-text1)" }}>
               {goals.calories}
@@ -611,10 +613,10 @@ export default function MenuPage() {
               className="text-[10px] font-bold uppercase tracking-widest"
               style={{ color: "var(--sf-text6)" }}
             >
-              Left today
+              {t("menu.leftToday")}
             </p>
             <p className="text-base font-black" style={{ color: overGoal ? "#f43f5e" : "#00d2ff" }}>
-              {overGoal ? "Over!" : calLeft}
+              {overGoal ? t("menu.over") : calLeft}
               <span className="text-xs font-medium" style={{ color: "var(--sf-text6)" }}> cal</span>
             </p>
           </div>
@@ -624,7 +626,7 @@ export default function MenuPage() {
               className="text-[10px] font-bold uppercase tracking-widest"
               style={{ color: "var(--sf-text6)" }}
             >
-              Protein left
+              {t("menu.proteinLeft")}
             </p>
             <p className="text-base font-black" style={{ color: "#38bdf8" }}>
               {proteinLeft}
@@ -682,7 +684,7 @@ export default function MenuPage() {
                 {activeCfg.label}
               </p>
               <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
-                {activeCfg.meals} · pick one from each group
+                {activeCfg.meals} · {t("menu.pickOne")}
               </p>
             </div>
             <span
@@ -697,7 +699,7 @@ export default function MenuPage() {
           <div className="px-5 pt-3 pb-2" style={{ borderTop: "1px solid var(--sf-border)" }}>
             <input
               type="text"
-              placeholder="Hide foods... e.g. salmon, tofu"
+              placeholder={t("menu.hideFoods")}
               value={excludeInput}
               onChange={(e) => setExclude(e.target.value)}
               className="w-full rounded-xl px-3 py-2.5 text-xs outline-none"
@@ -724,9 +726,9 @@ export default function MenuPage() {
 
           {/* Food groups + custom */}
           <div key={activeTier} className="px-5 pb-4">
-            <FoodSection title="Protein"    color="#38bdf8" items={getFiltered(foods.protein)} />
-            <FoodSection title="Carbs"      color="#a78bfa" items={getFiltered(foods.carbs)}   />
-            <FoodSection title="Vegetables" color="#4ade80" items={getFiltered(foods.veggies)} chips />
+            <FoodSection title={t("menu.protein")}    color="#38bdf8" items={getFiltered(foods.protein)} />
+            <FoodSection title={t("menu.carbs")}      color="#a78bfa" items={getFiltered(foods.carbs)}   />
+            <FoodSection title={t("menu.vegetables")} color="#4ade80" items={getFiltered(foods.veggies)} chips />
 
             {customFoods[activeTier].length > 0 && (
               <div className="pt-3" style={{ borderTop: "1px solid var(--sf-border)" }}>
@@ -734,7 +736,7 @@ export default function MenuPage() {
                   className="mb-1.5 text-[10px] font-bold uppercase tracking-widest"
                   style={{ color: "#fb923c" }}
                 >
-                  Custom
+                  {t("menu.custom")}
                 </p>
                 {customFoods[activeTier].map((item, idx) => (
                   <FoodRow
@@ -756,8 +758,8 @@ export default function MenuPage() {
 
         {/* ── Sauces & Seasonings ── */}
         <CollapsibleCard
-          title="Sauces & Seasonings"
-          subtitle="Free vs. count these"
+          title={t("menu.sauces")}
+          subtitle={t("menu.saucesSubtitle")}
           isOpen={openSauces}
           onToggle={() => setOpenSauces((v) => !v)}
         >
@@ -766,7 +768,7 @@ export default function MenuPage() {
               className="mb-2 text-[10px] font-bold uppercase tracking-widest"
               style={{ color: "#4ade80" }}
             >
-              Use freely
+              {t("menu.useFreely")}
             </p>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {SAUCES_FREE.map((s) => (
@@ -783,7 +785,7 @@ export default function MenuPage() {
               className="mb-2 text-[10px] font-bold uppercase tracking-widest"
               style={{ color: "#fbbf24" }}
             >
-              Count these
+              {t("menu.countThese")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {SAUCES_CAREFUL.map((s) => (
@@ -801,8 +803,8 @@ export default function MenuPage() {
 
         {/* ── Watch List ── */}
         <CollapsibleCard
-          title="Watch List"
-          subtitle="High-calorie foods — measure carefully"
+          title={t("menu.watchList")}
+          subtitle={t("menu.watchListSubtitle")}
           isOpen={openWarnings}
           onToggle={() => setOpenWarn((v) => !v)}
         >

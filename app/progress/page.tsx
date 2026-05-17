@@ -11,6 +11,7 @@ import {
 } from "@/lib/weightLogs";
 import { useAuth } from "@/context/AuthContext";
 import { fetchWeightLogs, insertWeightLog, updateWeightLog, deleteWeightLog } from "@/lib/db/weight-logs";
+import { useLang } from "@/context/LanguageContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,8 +22,8 @@ function nowTime() {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
+function formatDate(dateStr: string, locale = "en-US") {
+  return new Date(dateStr + "T00:00:00").toLocaleDateString(locale, {
     month: "short", day: "numeric", year: "numeric",
   });
 }
@@ -71,6 +72,7 @@ function EditRow({
   onSave: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useLang();
   return (
     <div className="flex items-center gap-2">
       <div
@@ -96,7 +98,7 @@ function EditRow({
         className="rounded-xl px-3.5 py-2.5 text-xs font-bold"
         style={{ backgroundColor: "#00d2ff", color: "#0a0a0a" }}
       >
-        Save
+        {t("progress.save")}
       </button>
       <button
         onClick={onCancel}
@@ -113,6 +115,8 @@ function EditRow({
 
 export default function ProgressPage() {
   const { user } = useAuth();
+  const { t, lang } = useLang();
+  const locale = lang === "he" ? "he-IL" : "en-US";
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [logs, setLogs]       = useState<WeightLog[]>([]);
   const [editingId, setEditingId]   = useState<string | null>(null);
@@ -216,10 +220,10 @@ export default function ProgressPage() {
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="px-1">
           <p className="text-[22px] font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
-            Progress
+            {t("progress.title")}
           </p>
           <p className="mt-0.5 text-sm" style={{ color: "var(--sf-text5)" }}>
-            Your weight journey
+            {t("progress.subtitle")}
           </p>
         </div>
 
@@ -234,7 +238,7 @@ export default function ProgressPage() {
               className="text-[11px] font-bold uppercase tracking-widest"
               style={{ color: "var(--sf-text6)" }}
             >
-              Current Weight
+              {t("progress.currentWeight")}
             </p>
 
             <p
@@ -263,11 +267,11 @@ export default function ProgressPage() {
                 {isImperial
                   ? `${kgToLb(Math.abs(changeKg))} lb`
                   : `${Math.abs(changeKg).toFixed(1)} kg`}
-                {changeKg < 0 ? " lost" : changeKg > 0 ? " gained" : " no change"}
+                {changeKg < 0 ? ` ${t("progress.lost")}` : changeKg > 0 ? ` ${t("progress.gained")}` : ` ${t("progress.noChange")}`}
               </p>
             ) : logs.length === 0 && profileWtKg !== null ? (
               <p className="mt-2 text-[11px]" style={{ color: "var(--sf-text6)" }}>
-                From your profile · log to start tracking
+                {t("progress.fromProfile")}
               </p>
             ) : null}
           </div>
@@ -279,7 +283,7 @@ export default function ProgressPage() {
                 className="text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--sf-text6)" }}
               >
-                Started
+                {t("progress.started")}
               </p>
               <p className="mt-1.5 text-lg font-black" style={{ color: "var(--sf-text1)" }}>
                 {startKg !== null ? dw(startKg) : "—"}
@@ -290,7 +294,7 @@ export default function ProgressPage() {
                 className="text-[10px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--sf-text6)" }}
               >
-                Goal
+                {t("progress.goal")}
               </p>
               <p className="mt-1.5 text-lg font-black" style={{ color: "var(--sf-text1)" }}>
                 {goalKg !== null ? dw(goalKg) : "—"}
@@ -304,10 +308,10 @@ export default function ProgressPage() {
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
                   {remainingKg !== null && Math.abs(remainingKg) < 0.15
-                    ? "Goal reached!"
+                    ? t("progress.goalReached")
                     : remainingKg !== null
-                    ? `${dw(Math.abs(remainingKg))} to go`
-                    : "Progress to goal"}
+                    ? t("progress.toGo", { amount: dw(Math.abs(remainingKg)) })
+                    : t("progress.progressToGoal")}
                 </p>
                 <p className="text-[11px] font-bold" style={{ color: "#00d2ff" }}>
                   {Math.round(progressPct * 100)}%
@@ -318,7 +322,7 @@ export default function ProgressPage() {
           ) : (
             <div className="px-5 py-3.5">
               <p className="text-[11px]" style={{ color: "var(--sf-text7)" }}>
-                Set a goal weight in Profile to see progress
+                {t("progress.setGoalHint")}
               </p>
             </div>
           )}
@@ -334,7 +338,7 @@ export default function ProgressPage() {
               className="text-[11px] font-bold uppercase tracking-widest"
               style={{ color: "var(--sf-text6)" }}
             >
-              Log Weight
+              {t("progress.logWeight")}
             </p>
           </div>
 
@@ -391,7 +395,7 @@ export default function ProgressPage() {
                 cursor: canLog ? "pointer" : "default",
               }}
             >
-              Log Weight
+              {t("progress.logButton")}
             </button>
           </div>
         </div>
@@ -406,10 +410,10 @@ export default function ProgressPage() {
             }}
           >
             <p className="text-sm font-semibold" style={{ color: "var(--sf-text5)" }}>
-              No weight logs yet
+              {t("progress.noLogsYet")}
             </p>
             <p className="mt-1 text-xs" style={{ color: "var(--sf-text7)" }}>
-              Log your weight above to start tracking
+              {t("progress.noLogsHint")}
             </p>
           </div>
         ) : (
@@ -422,7 +426,7 @@ export default function ProgressPage() {
                 className="text-[11px] font-bold uppercase tracking-widest"
                 style={{ color: "var(--sf-text6)" }}
               >
-                Recent Logs
+                {t("progress.recentLogs")}
               </p>
             </div>
 
@@ -449,7 +453,7 @@ export default function ProgressPage() {
                     <div>
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-semibold" style={{ color: "var(--sf-text2)" }}>
-                          {formatDate(log.date)}
+                          {formatDate(log.date, locale)}
                         </p>
                         {idx === 0 && (
                           <span
@@ -459,7 +463,7 @@ export default function ProgressPage() {
                               color: "#00d2ff",
                             }}
                           >
-                            latest
+                            {t("progress.latest")}
                           </span>
                         )}
                       </div>
