@@ -134,52 +134,114 @@ export type USDAMatch = {
   fat100:      number;
 };
 
+// Build a ranked list of USDA query strings to try in sequence.
+// Uses the alias (most specific) first, then progressively simpler fallbacks.
+function buildQueryChain(rawName: string): string[] {
+  const lower = rawName.toLowerCase().trim();
+  const seen  = new Set<string>();
+  const out:  string[] = [];
+
+  function add(q: string) {
+    const t = q.trim();
+    if (t && !seen.has(t)) { seen.add(t); out.push(t); }
+  }
+
+  // 1. Exact alias (most targeted)
+  if (ALIASES[lower]) add(ALIASES[lower]);
+
+  // 2. Longest partial alias
+  const partialKey = Object.keys(ALIASES)
+    .filter((k) => lower.includes(k))
+    .sort((a, b) => b.length - a.length)[0];
+  if (partialKey) add(ALIASES[partialKey]);
+
+  // 3. Original user input
+  add(lower);
+
+  // 4. Singular form — "chicken wings" → "chicken wing"
+  if (lower.endsWith("s") && lower.length > 4) add(lower.slice(0, -1));
+
+  // 5. First two words — shorter, broader match for USDA full-text search
+  const words = lower.split(/\s+/);
+  if (words.length > 1) add(words.slice(0, 2).join(" "));
+
+  return out.slice(0, 5);
+}
+
+// Execute a single USDA /foods/search request and return parsed matches.
+async function fetchOneQuery(
+  query:    string,
+  apiKey:   string,
+  pageSize: number,
+  dataType  = "Foundation,SR Legacy",
+): Promise<USDAMatch[]> {
+  const params = new URLSearchParams({
+    query,
+    api_key:   apiKey,
+    dataType,
+    pageSize:  String(pageSize),
+    nutrients: `${NID.calories},${NID.protein},${NID.fat},${NID.carbs}`,
+  });
+  try {
+    const res = await fetch(`${USDA_BASE}/foods/search?${params}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json() as { foods?: USDASearchFood[] };
+    const out: USDAMatch[] = [];
+    for (const food of (data.foods ?? [])) {
+      const per100g = extractPer100g(food.foodNutrients);
+      if (!per100g) continue;
+      out.push({
+        fdcId:       food.fdcId,
+        description: food.description,
+        dataType:    food.dataType,
+        cal100:      Math.round(per100g.calories),
+        protein100:  Math.round(per100g.protein),
+        carbs100:    Math.round(per100g.carbs),
+        fat100:      Math.round(per100g.fat),
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// Search USDA with a fallback chain — tries each query in order and returns
+// the first non-empty batch. Falls back to broader dataType as a last resort.
 export async function usdaSearch(
   foodName: string,
   apiKey:   string,
   pageSize  = 10,
 ): Promise<USDAMatch[]> {
-  const query  = buildQuery(foodName);
-  const params = new URLSearchParams({
-    query,
-    api_key:   apiKey,
-    dataType:  "Foundation,SR Legacy",
-    pageSize:  String(pageSize),
-    nutrients: `${NID.calories},${NID.protein},${NID.fat},${NID.carbs}`,
-  });
+  const queries = buildQueryChain(foodName);
+  const seen    = new Set<number>();
 
-  let foods: USDASearchFood[];
-  try {
-    const res = await fetch(`${USDA_BASE}/foods/search?${params}`, {
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) {
-      console.warn(`[usda] Search HTTP ${res.status} for "${foodName}" (query: "${query}")`);
-      return [];
+  for (const query of queries) {
+    const batch  = await fetchOneQuery(query, apiKey, pageSize);
+    const unique = batch.filter((m) => !seen.has(m.fdcId));
+    if (unique.length > 0) {
+      unique.forEach((m) => seen.add(m.fdcId));
+      console.info(`[usda] "${foodName}" → "${query}" → ${unique.length} results`);
+      return unique.slice(0, pageSize);
     }
-    const data = await res.json() as { foods?: USDASearchFood[] };
-    foods = data.foods ?? [];
-  } catch (err) {
-    console.warn(`[usda] Network error for "${foodName}":`, err);
-    return [];
+    console.info(`[usda] "${foodName}" → "${query}" → 0, trying next…`);
   }
 
-  const out: USDAMatch[] = [];
-  for (const food of foods) {
-    const per100g = extractPer100g(food.foodNutrients);
-    if (!per100g) continue;
-    out.push({
-      fdcId:       food.fdcId,
-      description: food.description,
-      dataType:    food.dataType,
-      cal100:      Math.round(per100g.calories),
-      protein100:  Math.round(per100g.protein),
-      carbs100:    Math.round(per100g.carbs),
-      fat100:      Math.round(per100g.fat),
-    });
+  // Last resort: widen to include Survey (FNDDS) data
+  const broadQuery = queries.at(-1) ?? foodName.toLowerCase().trim();
+  const broad = await fetchOneQuery(
+    broadQuery, apiKey, pageSize,
+    "Foundation,SR Legacy,Survey (FNDDS)",
+  );
+  if (broad.length > 0) {
+    console.info(`[usda] "${foodName}" → broad search → ${broad.length} results`);
+    return broad.slice(0, pageSize);
   }
-  console.info(`[usda] "${foodName}" → ${out.length} results (query: "${query}")`);
-  return out;
+
+  console.warn(`[usda] "${foodName}" → no results after ${queries.length + 1} attempts`);
+  return [];
 }
 
 // ─── Single-result lookup (used by Pro Mode / parse-food) ────────────────────
