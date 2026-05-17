@@ -1511,9 +1511,8 @@ function MealBuilderSheet({
 
       {/* Scrollable food list */}
       <div className="flex-1 overflow-y-auto">
-        {renderList()}
         {/* Custom item button */}
-        <div className="px-5 py-4">
+        <div className="px-5 py-3">
           <button
             onClick={() => { setEditingCustom(null); setShowCustomForm(true); }}
             className="w-full rounded-2xl py-3 text-sm font-bold transition-all active:scale-95"
@@ -1526,6 +1525,7 @@ function MealBuilderSheet({
             + Custom item
           </button>
         </div>
+        {renderList()}
       </div>
 
       {/* Your Meal — sticky section, always above footer when foods are selected */}
