@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLang } from "@/context/LanguageContext";
 
-const tabs = [
+const NAV_ITEMS = [
   {
     href: "/",
-    label: "Home",
+    key: "nav.home" as const,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -21,7 +22,7 @@ const tabs = [
   },
   {
     href: "/log",
-    label: "Log",
+    key: "nav.log" as const,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -41,7 +42,7 @@ const tabs = [
   },
   {
     href: "/menu",
-    label: "Menu",
+    key: "nav.menu" as const,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 11l19-9-9 19-2-8-8-2z" />
@@ -55,7 +56,7 @@ const tabs = [
   },
   {
     href: "/progress",
-    label: "Progress",
+    key: "nav.progress" as const,
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
@@ -77,48 +78,36 @@ const tabs = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLang();
 
   return (
     <nav
       className="flex h-[68px] shrink-0 px-1"
       style={{ backgroundColor: "var(--sf-bg)", borderTop: "1px solid var(--sf-border)" }}
     >
-      {tabs.map((tab) => {
-        const active = pathname === tab.href;
+      {NAV_ITEMS.map((item) => {
+        const active = pathname === item.href;
         return (
           <Link
-            key={tab.href}
-            href={tab.href}
+            key={item.href}
+            href={item.href}
             className="flex flex-1 flex-col items-center justify-center gap-1 py-1"
           >
             <div
               className="flex items-center justify-center rounded-2xl transition-all duration-200 ease-out"
               style={
                 active
-                  ? {
-                      backgroundColor: "rgba(0, 210, 255, 0.08)",
-                      color: "#00d2ff",
-                      paddingLeft: "20px",
-                      paddingRight: "20px",
-                      paddingTop: "6px",
-                      paddingBottom: "6px",
-                    }
-                  : {
-                      color: "var(--sf-text6)",
-                      paddingLeft: "12px",
-                      paddingRight: "12px",
-                      paddingTop: "6px",
-                      paddingBottom: "6px",
-                    }
+                  ? { backgroundColor: "rgba(0, 210, 255, 0.08)", color: "#00d2ff", paddingLeft: "20px", paddingRight: "20px", paddingTop: "6px", paddingBottom: "6px" }
+                  : { color: "var(--sf-text6)", paddingLeft: "12px", paddingRight: "12px", paddingTop: "6px", paddingBottom: "6px" }
               }
             >
-              {active ? tab.iconActive : tab.icon}
+              {active ? item.iconActive : item.icon}
             </div>
             <span
               className="text-[10px] font-semibold transition-colors duration-200"
               style={{ color: active ? "#00d2ff" : "var(--sf-text6)" }}
             >
-              {tab.label}
+              {t(item.key)}
             </span>
           </Link>
         );

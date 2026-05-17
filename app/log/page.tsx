@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useApp, type FoodEntry } from "@/context/AppContext";
+import { useLang } from "@/context/LanguageContext";
 import {
   getLocalDateKey,
   shiftDateKey,
@@ -11,19 +12,21 @@ import {
 import FoodEntryCard from "@/components/FoodEntryCard";
 import { fmtCal, fmtMacro } from "@/lib/format";
 
-function formatNavLabel(dateKey: string): string {
+function formatNavLabel(dateKey: string, t: (k: string) => string, lang: string): string {
   const todayKey = getLocalDateKey();
   const [y, m, d] = dateKey.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  const monthDay = date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
-  if (dateKey === todayKey) return `Today, ${monthDay}`;
-  if (dateKey === shiftDateKey(todayKey, -1)) return `Yesterday, ${monthDay}`;
-  return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const locale = lang === "he" ? "he-IL" : "en-US";
+  const monthDay = date.toLocaleDateString(locale, { month: "long", day: "numeric" });
+  if (dateKey === todayKey) return `${t("foodLog.today")}, ${monthDay}`;
+  if (dateKey === shiftDateKey(todayKey, -1)) return `${t("foodLog.yesterday")}, ${monthDay}`;
+  return date.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" });
 }
 
 export default function LogPage() {
   const { user } = useAuth();
   const { state, dispatch } = useApp();
+  const { t, lang, dir } = useLang();
 
   const todayKey = getLocalDateKey();
   const [selectedKey, setSelectedKey] = useState(todayKey);
@@ -31,9 +34,6 @@ export default function LogPage() {
   const [loadingPast, setLoadingPast] = useState(false);
 
   const isToday = selectedKey === todayKey;
-
-  // For today: use AppContext (always up-to-date with new logs from Home).
-  // For past days: fetch from Supabase into local state.
   const displayEntries = isToday ? state.entries : pastEntries;
 
   useEffect(() => {
@@ -61,8 +61,6 @@ export default function LogPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedKey, user?.id]);
 
-  // Past-day edit/delete: update local state + dispatch (dispatch handles Supabase;
-  // AppContext reducer is a safe no-op because past entries are not in today's state).
   function handlePastDelete(id: string) {
     setPastEntries((prev) => prev.filter((e) => e.id !== id));
     dispatch({ type: "DELETE_ENTRY", payload: id });
@@ -81,14 +79,18 @@ export default function LogPage() {
   };
 
   const canGoForward = selectedKey < todayKey;
-  const label = formatNavLabel(selectedKey);
+  const label = formatNavLabel(selectedKey, t, lang);
+
+  // In RTL, previous/next arrows are visually swapped to match reading direction
+  const prevPoints = dir === "rtl" ? "9 18 15 12 9 6" : "15 18 9 12 15 6";
+  const nextPoints = dir === "rtl" ? "15 18 9 12 15 6" : "9 18 15 12 9 6";
 
   return (
     <div className="flex h-full flex-col overflow-y-auto px-4 py-5">
       {/* Page title */}
       <div className="px-1 pb-4">
         <p className="text-[22px] font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
-          Food Log
+          {t("foodLog.title")}
         </p>
       </div>
 
@@ -100,12 +102,12 @@ export default function LogPage() {
         {/* Previous day */}
         <button
           onClick={() => setSelectedKey((k) => shiftDateKey(k, -1))}
-          aria-label="Previous day"
+          aria-label={t("foodLog.prevDay")}
           className="flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-90"
           style={{ backgroundColor: "var(--sf-input)", color: "var(--sf-text4)" }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
+            <polyline points={prevPoints} />
           </svg>
         </button>
 
@@ -120,7 +122,7 @@ export default function LogPage() {
               className="rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all active:scale-95"
               style={{ backgroundColor: "rgba(0,210,255,0.12)", color: "#00d2ff" }}
             >
-              Today
+              {t("foodLog.today")}
             </button>
           )}
         </div>
@@ -129,7 +131,7 @@ export default function LogPage() {
         <button
           onClick={() => { if (canGoForward) setSelectedKey((k) => shiftDateKey(k, 1)); }}
           disabled={!canGoForward}
-          aria-label="Next day"
+          aria-label={t("foodLog.nextDay")}
           className="flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-90"
           style={{
             backgroundColor: canGoForward ? "var(--sf-input)" : "transparent",
@@ -137,7 +139,7 @@ export default function LogPage() {
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
+            <polyline points={nextPoints} />
           </svg>
         </button>
       </div>
@@ -146,12 +148,12 @@ export default function LogPage() {
       <div className="px-1 pb-3">
         <p className="text-sm" style={{ color: "var(--sf-text6)" }}>
           {loadingPast
-            ? "Loading…"
+            ? t("foodLog.loading")
             : displayEntries.length === 0
             ? isToday
-              ? "Nothing logged today"
-              : "No food logged for this day."
-            : `${displayEntries.length} item${displayEntries.length === 1 ? "" : "s"}`}
+              ? t("foodLog.nothingToday")
+              : t("foodLog.nothingDay")
+            : `${displayEntries.length} ${displayEntries.length === 1 ? t("foodLog.item") : t("foodLog.items")}`}
         </p>
       </div>
 
@@ -169,11 +171,11 @@ export default function LogPage() {
           style={{ border: "1px dashed var(--sf-pill)", backgroundColor: "var(--sf-surface2)" }}
         >
           <p className="text-sm font-semibold" style={{ color: "var(--sf-text7)" }}>
-            {isToday ? "Nothing logged today" : "No food logged for this day."}
+            {isToday ? t("foodLog.nothingToday") : t("foodLog.nothingDay")}
           </p>
           {isToday && (
             <p className="mt-1 text-xs" style={{ color: "var(--sf-text8)" }}>
-              Go to Home and use the chat to log your meals
+              {t("foodLog.logHint")}
             </p>
           )}
         </div>
@@ -199,23 +201,15 @@ export default function LogPage() {
             className="mt-4 overflow-hidden rounded-2xl"
             style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
           >
-            <div
-              className="border-b px-5 py-3.5"
-              style={{ borderColor: "var(--sf-border)" }}
-            >
-              <p
-                className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: "var(--sf-text7)" }}
-              >
-                {isToday ? "Today's totals" : "Day totals"}
+            <div className="border-b px-5 py-3.5" style={{ borderColor: "var(--sf-border)" }}>
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--sf-text7)" }}>
+                {isToday ? t("foodLog.todayTotals") : t("foodLog.dayTotals")}
               </p>
             </div>
             <div className="px-5 py-4">
               <p className="text-2xl font-black" style={{ color: "var(--sf-text1)" }}>
                 {fmtCal(total.calories)}
-                <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>
-                  cal
-                </span>
+                <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>cal</span>
               </p>
               <p className="mt-2 text-sm" style={{ color: "var(--sf-text6)" }}>
                 P{" "}

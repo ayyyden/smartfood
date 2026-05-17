@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/context/AppContext";
+import { useLang } from "@/context/LanguageContext";
 import { mockParse } from "@/lib/mockParser";
 import type { ParseFoodResponse, ParseFoodError, FoodItem } from "@/lib/types";
 import { validateAndSanitize } from "@/lib/validateNutrition";
@@ -10,6 +11,7 @@ type ChatStatus = "idle" | "loading" | "awaiting_followup";
 
 export default function ChatBox() {
   const { dispatch } = useApp();
+  const { t } = useLang();
 
   const [expanded, setExpanded] = useState(false);
   const [message, setMessage] = useState("");
@@ -22,8 +24,8 @@ export default function ChatBox() {
 
   useEffect(() => {
     if (expanded) {
-      const t = setTimeout(() => textareaRef.current?.focus(), 40);
-      return () => clearTimeout(t);
+      const timer = setTimeout(() => textareaRef.current?.focus(), 40);
+      return () => clearTimeout(timer);
     }
   }, [expanded]);
 
@@ -144,14 +146,14 @@ export default function ChatBox() {
         <button
           onClick={() => setExpanded(true)}
           className="flex h-full w-full items-center gap-3 px-4"
-          aria-label="Open food log input"
+          aria-label={t("chat.logMeal")}
         >
           <div
             className="flex flex-1 items-center gap-2.5 rounded-2xl px-4 py-2.5"
             style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
           >
             <span className="text-sm" style={{ color: "var(--sf-placeholder)" }}>
-              What did you eat?
+              {t("chat.whatDidYouEat")}
             </span>
           </div>
           <div
@@ -174,11 +176,11 @@ export default function ChatBox() {
               className="text-[11px] font-bold uppercase tracking-widest"
               style={{ color: "var(--sf-text6)" }}
             >
-              {status === "awaiting_followup" ? "One quick question" : "Log meal or workout"}
+              {status === "awaiting_followup" ? t("chat.quickQuestion") : t("chat.logMeal")}
             </span>
             <button
               onClick={resetChat}
-              aria-label="Close"
+              aria-label={t("chat.close")}
               className="flex h-6 w-6 items-center justify-center rounded-full transition-colors"
               style={{ color: "var(--sf-text6)" }}
             >
@@ -197,7 +199,7 @@ export default function ChatBox() {
                 style={{ borderColor: "var(--sf-input)", borderTopColor: "#00d2ff" }}
               />
               <p className="text-xs font-medium" style={{ color: "var(--sf-text6)" }}>
-                Analyzing your meal…
+                {t("chat.analyzing")}
               </p>
             </div>
           )}
@@ -232,8 +234,8 @@ export default function ChatBox() {
                 onKeyDown={handleKeyDown}
                 placeholder={
                   status === "awaiting_followup"
-                    ? "Type your answer…"
-                    : "e.g. 250g rice, 200g chicken"
+                    ? t("chat.answerPlaceholder")
+                    : t("chat.mealPlaceholder")
                 }
                 rows={status === "awaiting_followup" ? 2 : 3}
                 className="flex-1 resize-none rounded-2xl px-4 py-3 text-sm transition-colors focus:outline-none"

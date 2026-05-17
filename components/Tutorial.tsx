@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLang } from "@/context/LanguageContext";
 
 // ── Slide icons ───────────────────────────────────────────────────────────────
 
@@ -57,57 +58,27 @@ function IconProgress() {
   );
 }
 
-// ── Slide data ────────────────────────────────────────────────────────────────
+// ── Slide definitions (keys reference translation JSON) ───────────────────────
 
-const SLIDES = [
-  {
-    icon: <IconSmart />,
-    accentColor: "#00d2ff",
-    accentBg: "rgba(0,210,255,0.1)",
-    accentBorder: "rgba(0,210,255,0.2)",
-    title: "Smart Mode",
-    body: "Type what you ate naturally and Smartfood instantly logs your calories and macros using AI. No searching, no fuss.",
-  },
-  {
-    icon: <IconPro />,
-    accentColor: "#fb923c",
-    accentBg: "rgba(251,146,60,0.1)",
-    accentBorder: "rgba(251,146,60,0.2)",
-    title: "Pro Mode",
-    body: "Switch to Pro for exact tracking. Build meals from 36 built-in foods or create and save your own custom foods.",
-  },
-  {
-    icon: <IconLog />,
-    accentColor: "#a78bfa",
-    accentBg: "rgba(167,139,250,0.1)",
-    accentBorder: "rgba(167,139,250,0.2)",
-    title: "Food Log",
-    body: "Every meal is saved in your Food Log. Tap any entry to see the full breakdown, edit the numbers, or delete it.",
-  },
-  {
-    icon: <IconMenu />,
-    accentColor: "#4ade80",
-    accentBg: "rgba(74,222,128,0.1)",
-    accentBorder: "rgba(74,222,128,0.2)",
-    title: "Mix & Match Menu",
-    body: "The Menu tab shows what you can still eat today to hit your calorie and macro goals. Great for planning ahead.",
-  },
-  {
-    icon: <IconProgress />,
-    accentColor: "#38bdf8",
-    accentBg: "rgba(56,189,248,0.1)",
-    accentBorder: "rgba(56,189,248,0.2)",
-    title: "Progress",
-    body: "Log your weight each day to track changes over time. See trends and stay motivated on your journey.",
-  },
+const SLIDE_DEFS = [
+  { key: "smart",    icon: <IconSmart />,    accentColor: "#00d2ff", accentBg: "rgba(0,210,255,0.1)",    accentBorder: "rgba(0,210,255,0.2)" },
+  { key: "pro",      icon: <IconPro />,      accentColor: "#fb923c", accentBg: "rgba(251,146,60,0.1)",   accentBorder: "rgba(251,146,60,0.2)" },
+  { key: "log",      icon: <IconLog />,      accentColor: "#a78bfa", accentBg: "rgba(167,139,250,0.1)",  accentBorder: "rgba(167,139,250,0.2)" },
+  { key: "menu",     icon: <IconMenu />,     accentColor: "#4ade80", accentBg: "rgba(74,222,128,0.1)",   accentBorder: "rgba(74,222,128,0.2)" },
+  { key: "progress", icon: <IconProgress />, accentColor: "#38bdf8", accentBg: "rgba(56,189,248,0.1)",   accentBorder: "rgba(56,189,248,0.2)" },
 ] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Tutorial({ onDone }: { onDone: () => void }) {
+  const { t, dir } = useLang();
   const [index, setIndex] = useState(0);
-  const slide = SLIDES[index];
-  const isLast = index === SLIDES.length - 1;
+  const slide = SLIDE_DEFS[index];
+  const isLast = index === SLIDE_DEFS.length - 1;
+
+  // In RTL the back/next chevrons flip direction
+  const prevPoints = dir === "rtl" ? "9 18 15 12 9 6" : "15 18 9 12 15 6";
+  const nextPoints = dir === "rtl" ? "15 18 9 12 15 6" : "9 18 15 12 9 6";
 
   return (
     <div
@@ -121,14 +92,14 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
         {/* Header row */}
         <div className="flex items-center justify-between mb-8">
           <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
-            Quick tutorial
+            {t("tutorial.label")}
           </span>
           <button
             onClick={onDone}
             className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
             style={{ color: "var(--sf-text3)", backgroundColor: "var(--sf-input)" }}
           >
-            Skip
+            {t("tutorial.skip")}
           </button>
         </div>
 
@@ -143,17 +114,17 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
         {/* Content */}
         <div className="mb-8 space-y-2">
           <p className="text-[22px] font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
-            {slide.title}
+            {t(`tutorial.${slide.key}Title`)}
           </p>
           <p className="text-sm leading-relaxed" style={{ color: "var(--sf-text3)" }}>
-            {slide.body}
+            {t(`tutorial.${slide.key}Body`)}
           </p>
         </div>
 
         {/* Dots + action */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            {SLIDES.map((_, i) => (
+            {SLIDE_DEFS.map((_, i) => (
               <div
                 key={i}
                 className="rounded-full transition-all duration-300"
@@ -174,7 +145,7 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
                 style={{ backgroundColor: "var(--sf-input)", color: "var(--sf-text4)" }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
+                  <polyline points={prevPoints} />
                 </svg>
               </button>
             )}
@@ -183,7 +154,7 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
               className="rounded-2xl px-6 py-3 text-sm font-black transition-all active:scale-95"
               style={{ backgroundColor: slide.accentColor, color: "#0a0a0a" }}
             >
-              {isLast ? "Finish" : "Next"}
+              {isLast ? t("tutorial.finish") : t("tutorial.next")}
             </button>
           </div>
         </div>

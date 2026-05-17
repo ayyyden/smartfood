@@ -1,10 +1,12 @@
 "use client";
 
 import { useApp } from "@/context/AppContext";
+import { useLang } from "@/context/LanguageContext";
 import { fmtCal, fmtMacro, calHeroSize } from "@/lib/format";
 
 export default function DailyInfoCard() {
   const { state } = useApp();
+  const { t, lang } = useLang();
   const { entries, goals } = state;
 
   const eaten   = entries.reduce((s, e) => s + e.calories, 0);
@@ -18,12 +20,12 @@ export default function DailyInfoCard() {
   const nearDone    = !overGoal && remaining > 0 && remaining < 200;
 
   const statusLabel = overGoal
-    ? "Over goal"
+    ? t("home.overGoal")
     : entries.length === 0
-    ? "Not started"
+    ? t("home.notStarted")
     : nearDone
-    ? "Almost there"
-    : "On track";
+    ? t("home.almostThere")
+    : t("home.onTrack");
 
   const statusStyle = overGoal
     ? { backgroundColor: "rgba(244,63,94,0.1)", color: "#f43f5e" }
@@ -43,7 +45,8 @@ export default function DailyInfoCard() {
 
   const barColor = overGoal ? "#f43f5e" : "#00d2ff";
 
-  const today = new Date().toLocaleDateString("en-US", {
+  const locale = lang === "he" ? "he-IL" : "en-US";
+  const today = new Date().toLocaleDateString(locale, {
     weekday: "long",
     month: "short",
     day: "numeric",
@@ -61,7 +64,7 @@ export default function DailyInfoCard() {
             className="text-[11px] font-bold uppercase tracking-widest"
             style={{ color: "var(--sf-text6)" }}
           >
-            Today
+            {t("home.today")}
           </p>
           <p
             suppressHydrationWarning
@@ -97,7 +100,7 @@ export default function DailyInfoCard() {
           </span>
         </div>
         <p className="mt-2 text-sm font-medium" style={{ color: "var(--sf-text5)" }}>
-          calories eaten today
+          {t("home.caloriesEaten")}
         </p>
       </div>
 
@@ -119,25 +122,25 @@ export default function DailyInfoCard() {
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs" style={{ color: "var(--sf-text6)" }}>
             {eaten === 0
-              ? "Nothing logged yet"
-              : `${progressPct.toFixed(0)}% of goal`}
+              ? t("home.nothingLogged")
+              : t("home.percentOfGoal", { pct: progressPct.toFixed(0) })}
           </span>
           <span
             className="text-xs font-bold"
             style={{ color: overGoal ? "#f43f5e" : "#00d2ff" }}
           >
             {overGoal
-              ? `${fmtCal(eaten - goals.calories)} over`
-              : `${fmtCal(remaining)} cal left`}
+              ? t("home.over", { cal: fmtCal(eaten - goals.calories) })
+              : t("home.calLeft", { cal: fmtCal(remaining) })}
           </span>
         </div>
       </div>
 
       {/* ── Macro grid ── */}
       <div className="grid grid-cols-3" style={{ gap: "1px", backgroundColor: "var(--sf-border)" }}>
-        <MacroCell label="Protein" eaten={protein} goal={goals.protein} color="#38bdf8" />
-        <MacroCell label="Carbs"   eaten={carbs}   goal={goals.carbs}   color="#a78bfa" />
-        <MacroCell label="Fat"     eaten={fat}      goal={goals.fat}     color="#fb7185" />
+        <MacroCell label={t("home.protein")} eaten={protein} goal={goals.protein} color="#38bdf8" goalLabel={t("home.ofGoal", { goal: goals.protein })} />
+        <MacroCell label={t("home.carbs")}   eaten={carbs}   goal={goals.carbs}   color="#a78bfa" goalLabel={t("home.ofGoal", { goal: goals.carbs })} />
+        <MacroCell label={t("home.fat")}     eaten={fat}     goal={goals.fat}     color="#fb7185" goalLabel={t("home.ofGoal", { goal: goals.fat })} />
       </div>
 
       {/* ── Net footer ── */}
@@ -145,7 +148,7 @@ export default function DailyInfoCard() {
         className="flex items-center justify-between px-5 py-3.5"
         style={{ backgroundColor: "var(--sf-surface2)" }}
       >
-        <span className="text-xs" style={{ color: "var(--sf-text6)" }}>Net calories</span>
+        <span className="text-xs" style={{ color: "var(--sf-text6)" }}>{t("home.netCalories")}</span>
         <span className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
           {fmtCal(eaten)} cal
         </span>
@@ -159,11 +162,13 @@ function MacroCell({
   eaten,
   goal,
   color,
+  goalLabel,
 }: {
   label: string;
   eaten: number;
   goal: number;
   color: string;
+  goalLabel: string;
 }) {
   const pct = goal > 0 ? Math.min((eaten / goal) * 100, 100) : 0;
   return (
@@ -188,7 +193,7 @@ function MacroCell({
         />
       </div>
       <p className="mt-1.5 text-[10px]" style={{ color: "var(--sf-text7)" }}>
-        of {goal}g
+        {goalLabel}
       </p>
     </div>
   );

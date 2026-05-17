@@ -2,15 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useLang } from "@/context/LanguageContext";
 import DumbbellLogo from "@/components/DumbbellLogo";
 
 type Mode = "login" | "signup";
 
-// Inlined at build time — tells us what Vercel actually baked in
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
-// Show debug panel on local dev or Vercel preview, never on production
 const SHOW_DEBUG =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_VERCEL_ENV === "preview";
@@ -50,9 +49,10 @@ function friendlyAuthError(msg: string): string {
   return msg;
 }
 
-// ── Success screen shown after signup ────────────────────────────────────────
+// ── Success screen shown after signup ─────────────────────────────────────────
 
 function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void }) {
+  const { t } = useLang();
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center px-5 py-10"
@@ -77,10 +77,10 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
 
           <div className="text-center space-y-1">
             <p className="text-[24px] font-black tracking-tight" style={{ color: "var(--sf-text1)" }}>
-              Check your email
+              {t("auth.checkEmail")}
             </p>
             <p className="text-sm" style={{ color: "var(--sf-text4)" }}>
-              We sent a confirmation link to
+              {t("auth.sentLink")}
             </p>
             <p className="text-sm font-bold" style={{ color: "#00d2ff" }}>
               {email}
@@ -93,11 +93,7 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
           className="rounded-2xl p-5 space-y-3"
           style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
         >
-          {[
-            "Open the email from Smartfood",
-            'Click "Confirm your email"',
-            "You'll be taken directly to account setup",
-          ].map((step, i) => (
+          {([t("auth.step1"), t("auth.step2"), t("auth.step3")] as string[]).map((step, i) => (
             <div key={i} className="flex items-start gap-3">
               <span
                 className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black"
@@ -113,13 +109,13 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
         </div>
 
         <p className="text-center text-xs" style={{ color: "var(--sf-text5)" }}>
-          Didn&apos;t receive it? Check your spam folder, or{" "}
+          {t("auth.noEmail")}{" "}
           <button
             onClick={onBack}
             className="underline"
             style={{ color: "var(--sf-text4)" }}
           >
-            go back and try again
+            {t("auth.goBack")}
           </button>
           .
         </p>
@@ -131,6 +127,7 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
 // ── Main auth page ────────────────────────────────────────────────────────────
 
 export default function AuthPage() {
+  const { t } = useLang();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -139,13 +136,11 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [signupSent, setSignupSent] = useState(false);
 
-  // Pick up ?error= dropped by /auth/callback when a link is expired/invalid
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cbError = params.get("error");
     if (cbError) {
       setError(friendlyAuthError(decodeURIComponent(cbError)));
-      // Clean the URL so the param doesn't persist on refresh
       window.history.replaceState({}, "", "/auth");
     }
   }, []);
@@ -182,8 +177,6 @@ export default function AuthPage() {
           setError(friendlyAuthError(authError.message));
           return;
         }
-        // Email confirmation OFF → session returned immediately → go straight to onboarding
-        // Email confirmation ON  → no session yet → show "check your email" screen
         if (signUpData.session) {
           window.location.href = "/onboarding";
         } else {
@@ -222,7 +215,6 @@ export default function AuthPage() {
     }
   }
 
-  // Show success screen after signup
   if (signupSent) {
     return <SignupSentScreen email={email} onBack={() => setSignupSent(false)} />;
   }
@@ -253,12 +245,12 @@ export default function AuthPage() {
               Smartfood
             </p>
             <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>
-              {mode === "login" ? "Sign in to continue" : "Create your account"}
+              {mode === "login" ? t("auth.signInSubtitle") : t("auth.signUpSubtitle")}
             </p>
           </div>
         </div>
 
-        {/* Debug panel — dev + preview only, never production */}
+        {/* Debug panel */}
         {SHOW_DEBUG && (
           <div
             className="rounded-xl px-4 py-3 text-xs space-y-1 font-mono"
@@ -288,7 +280,7 @@ export default function AuthPage() {
                   : { backgroundColor: "transparent", color: "var(--sf-text5)" }
               }
             >
-              {m === "login" ? "Log in" : "Sign up"}
+              {m === "login" ? t("auth.loginTab") : t("auth.signupTab")}
             </button>
           ))}
         </div>
@@ -299,7 +291,7 @@ export default function AuthPage() {
             <input
               type="email"
               required
-              placeholder="Email"
+              placeholder={t("auth.email")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={inputStyle}
@@ -312,7 +304,7 @@ export default function AuthPage() {
             <input
               type="password"
               required
-              placeholder="Password"
+              placeholder={t("auth.password")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               style={inputStyle}
@@ -326,7 +318,7 @@ export default function AuthPage() {
               <input
                 type="password"
                 required
-                placeholder="Confirm password"
+                placeholder={t("auth.confirmPassword")}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 style={inputStyle}
@@ -352,15 +344,15 @@ export default function AuthPage() {
             style={{ backgroundColor: "#00d2ff", color: "#0a0a0a" }}
           >
             {loading
-              ? "Please wait…"
+              ? t("auth.loading")
               : mode === "login"
-              ? "Log in"
-              : "Create account"}
+              ? t("auth.loginButton")
+              : t("auth.createAccountButton")}
           </button>
         </form>
 
         <p className="text-center text-xs" style={{ color: "var(--sf-text5)" }}>
-          Your data is private and encrypted.
+          {t("auth.privacy")}
         </p>
       </div>
     </div>

@@ -6,21 +6,23 @@ import ProPanel from "@/components/ProPanel";
 import DailyInfoCard from "@/components/DailyInfoCard";
 import Tutorial from "@/components/Tutorial";
 import { useAuth } from "@/context/AuthContext";
+import { useLang } from "@/context/LanguageContext";
 import { fetchProfile, markTutorialCompleted } from "@/lib/db/profiles";
 
 type TrackingMode = "smart" | "pro";
 const MODE_KEY = "smartfood_mode";
 const TUTORIAL_REOPEN_KEY = "smartfood_tutorial_reopen";
 
-function getGreeting() {
+function getGreetingKey(): "home.morning" | "home.afternoon" | "home.evening" {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return "home.morning";
+  if (h < 17) return "home.afternoon";
+  return "home.evening";
 }
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { t } = useLang();
   const [mode, setMode] = useState<TrackingMode>("smart");
   const [showTutorial, setShowTutorial] = useState(false);
 
@@ -50,8 +52,6 @@ export default function HomePage() {
     }
   }
 
-  const greeting = getGreeting();
-
   return (
     <div className="flex h-full flex-col">
       {showTutorial && <Tutorial onDone={handleTutorialDone} />}
@@ -65,10 +65,10 @@ export default function HomePage() {
             className="text-[22px] font-black leading-tight"
             style={{ color: "var(--sf-text1)" }}
           >
-            {greeting}
+            {t(getGreetingKey())}
           </p>
           <p className="mt-0.5 text-sm" style={{ color: "var(--sf-text6)" }}>
-            Here&apos;s your day so far
+            {t("home.daySoFar")}
           </p>
         </div>
 

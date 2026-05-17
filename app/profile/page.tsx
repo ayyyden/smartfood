@@ -17,6 +17,7 @@ import {
   deriveMacros,
   calculateAge,
 } from "@/lib/profile";
+import { useLang } from "@/context/LanguageContext";
 
 // ─── Unit conversion helpers ──────────────────────────────────────────────────
 
@@ -196,6 +197,7 @@ const DIET_LABEL: Record<string, string> = Object.fromEntries(
 export default function ProfilePage() {
   const { dispatch } = useApp();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useLang();
   const [profile, setProfile]               = useState<Profile>(DEFAULT_PROFILE);
   const [viewMode, setViewMode]             = useState<"form" | "summary">("form");
   const [hasExistingProfile, setHasExisting] = useState(false);
@@ -310,7 +312,7 @@ export default function ProfilePage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
         <DumbbellLogo size={32} glow={0.3} />
-        <p className="text-sm" style={{ color: "var(--sf-text5)" }}>Loading profile…</p>
+        <p className="text-sm" style={{ color: "var(--sf-text5)" }}>{t("profile.loading")}</p>
       </div>
     );
   }
@@ -331,9 +333,9 @@ export default function ProfilePage() {
 
           <div className="px-1">
             <p className="text-[22px] font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
-              Profile
+              {t("profile.title")}
             </p>
-            <p className="mt-0.5 text-sm" style={{ color: "var(--sf-text6)" }}>Your account</p>
+            <p className="mt-0.5 text-sm" style={{ color: "var(--sf-text6)" }}>{t("profile.subtitle")}</p>
           </div>
 
           {/* Account card */}
@@ -382,7 +384,7 @@ export default function ProfilePage() {
                 className="flex items-center justify-between px-5 py-4"
                 style={{ borderBottom: "1px solid var(--sf-border)" }}
               >
-                <p className="text-sm" style={{ color: "var(--sf-text5)" }}>Daily calories</p>
+                <p className="text-sm" style={{ color: "var(--sf-text5)" }}>{t("profile.dailyCalories")}</p>
                 <p className="text-lg font-black" style={{ color: "#00d2ff" }}>
                   {profile.calorieGoal.toLocaleString()}
                   <span className="ml-1 text-xs font-normal" style={{ color: "var(--sf-text6)" }}>cal</span>
@@ -394,7 +396,7 @@ export default function ProfilePage() {
                   className="flex items-center justify-between px-5 py-4"
                   style={{ borderBottom: "1px solid var(--sf-border)" }}
                 >
-                  <p className="text-sm" style={{ color: "var(--sf-text5)" }}>Weight</p>
+                  <p className="text-sm" style={{ color: "var(--sf-text5)" }}>{t("profile.weight")}</p>
                   <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
                     {isImperial ? `${kgToLb(profile.weightKg as number)} lb` : `${profile.weightKg} kg`}
                   </p>
@@ -406,7 +408,7 @@ export default function ProfilePage() {
                   className="flex items-center justify-between px-5 py-4"
                   style={{ borderBottom: profile.dietRules.length > 0 ? "1px solid var(--sf-border)" : "none" }}
                 >
-                  <p className="text-sm" style={{ color: "var(--sf-text5)" }}>Height</p>
+                  <p className="text-sm" style={{ color: "var(--sf-text5)" }}>{t("profile.height")}</p>
                   <p className="text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
                     {isImperial ? `${cmToIn(profile.heightCm as number)} in` : `${profile.heightCm} cm`}
                   </p>
@@ -416,7 +418,7 @@ export default function ProfilePage() {
               {profile.dietRules.length > 0 && (
                 <div className="px-5 py-4">
                   <p className="mb-2.5 text-sm" style={{ color: "var(--sf-text5)" }}>
-                    Dietary restrictions
+                    {t("profile.dietaryRestrictions")}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {profile.dietRules.map((rule) => (
@@ -444,7 +446,7 @@ export default function ProfilePage() {
               border: "1px solid var(--sf-pill)",
             }}
           >
-            Edit Profile
+            {t("profile.editButton")}
           </button>
 
           <div className="h-8 shrink-0" />
@@ -462,10 +464,10 @@ export default function ProfilePage() {
         <div className="flex items-start justify-between px-1">
           <div>
             <p className="text-[22px] font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
-              Profile
+              {t("profile.title")}
             </p>
             <p className="mt-0.5 text-sm" style={{ color: "var(--sf-text6)" }}>
-              Your goals and preferences
+              {t("profile.editSubtitle")}
             </p>
           </div>
           {hasExistingProfile && (
@@ -479,7 +481,7 @@ export default function ProfilePage() {
                 border: "1px solid var(--sf-pill)",
               }}
             >
-              Cancel
+              {t("profile.cancel")}
             </button>
           )}
         </div>
