@@ -761,7 +761,7 @@ function QuantitySheet({
       <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.65)" }} />
       <div
         className="relative w-full max-w-[430px] space-y-5 rounded-t-3xl px-5 pb-10 pt-4"
-        style={{ backgroundColor: "var(--sf-bg)" }}
+        style={{ backgroundColor: "var(--sf-bg)", overflowX: "hidden" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
@@ -787,8 +787,8 @@ function QuantitySheet({
           )}
         </div>
 
-        {/* Amount + unit */}
-        <div className="flex items-stretch gap-3">
+        {/* Amount + unit — vertical stack, both full-width, no horizontal overflow */}
+        <div className="flex flex-col gap-3" style={{ overflow: "hidden" }}>
           <input
             type="number"
             inputMode="decimal"
@@ -796,22 +796,23 @@ function QuantitySheet({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0"
-            className="flex-1 rounded-2xl px-4 py-4 text-center text-3xl font-black outline-none"
+            className="w-full rounded-2xl px-4 py-4 text-center text-3xl font-black outline-none"
             style={{
               backgroundColor: "var(--sf-surface)",
               border: "2px solid rgba(0,210,255,0.45)",
               color: "#00d2ff",
+              minWidth: 0,
             }}
           />
           <select
             value={unit}
             onChange={(e) => setUnit(e.target.value as LogUnit)}
-            className="shrink-0 rounded-2xl px-3 py-4 text-sm font-bold outline-none"
+            className="w-full rounded-2xl px-4 py-3 text-sm font-bold outline-none"
             style={{
               backgroundColor: "var(--sf-surface)",
               border: "1px solid var(--sf-border2)",
               color: "var(--sf-text1)",
-              minWidth: 96,
+              minWidth: 0,
             }}
           >
             {pickerUnits.map((pu) => (
