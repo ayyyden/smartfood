@@ -79,7 +79,15 @@ function ItemRow({ item }: { item: FoodItem }) {
 
 // ── Main component ────────────────────────────────────────
 
-export default function FoodEntryCard({ entry }: { entry: FoodEntry }) {
+export default function FoodEntryCard({
+  entry,
+  onDelete,
+  onEdit,
+}: {
+  entry: FoodEntry;
+  onDelete?: (id: string) => void;
+  onEdit?: (updated: FoodEntry) => void;
+}) {
   const { dispatch } = useApp();
   const [editing, setEditing] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -93,11 +101,13 @@ export default function FoodEntryCard({ entry }: { entry: FoodEntry }) {
   const hasItems = Array.isArray(entry.items) && entry.items.length > 0;
 
   function handleDelete() {
-    dispatch({ type: "DELETE_ENTRY", payload: entry.id });
+    if (onDelete) onDelete(entry.id);
+    else dispatch({ type: "DELETE_ENTRY", payload: entry.id });
   }
 
   function handleSave() {
-    dispatch({ type: "EDIT_ENTRY", payload: draft });
+    if (onEdit) onEdit(draft);
+    else dispatch({ type: "EDIT_ENTRY", payload: draft });
     setEditing(false);
   }
 

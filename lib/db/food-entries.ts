@@ -10,6 +10,14 @@ export function getLocalDateKey(d = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+// Shifts a YYYY-MM-DD date key by `days` in local time (handles DST correctly).
+export function shiftDateKey(dateKey: string, days: number): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const date = new Date(y, m - 1, d); // local midnight, no UTC parsing
+  date.setDate(date.getDate() + days);
+  return getLocalDateKey(date);
+}
+
 export async function fetchTodayEntries(userId: string): Promise<FoodEntry[]> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -63,6 +71,27 @@ export async function updateFoodEntry(entry: FoodEntry): Promise<void> {
     })
     .eq("id", entry.id);
   if (error) throw error;
+}
+
+export async function fetchEntriesByDateKey(userId: string, dateKey: string): Promise<FoodEntry[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("food_entries")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("date_key", dateKey)
+    .order("logged_at", { ascending: false });
+  if (error || !data) return [];
+  return data.map((row) => ({
+    id:       row.id as string,
+    text:     (row.original_text as string) ?? "",
+    time:     (row.logged_at as string) ?? new Date().toISOString(),
+    calories: Number(row.calories),
+    protein:  Number(row.protein),
+    carbs:    Number(row.carbs),
+    fat:      Number(row.fat),
+    items:    row.items ?? undefined,
+  }));
 }
 
 export async function deleteFoodEntry(id: string): Promise<void> {
