@@ -632,6 +632,24 @@ function isBI(f: AnyFood): f is BuiltInFood {
 // BuiltInFood has all fields the helper functions need — cast is safe at runtime
 function asC(f: AnyFood): CustomFood { return f as unknown as CustomFood; }
 
+// Units shown in the quantity picker (friendlier labels than the meal-builder select)
+function getPickerUnits(food: AnyFood): Array<{ unit: LogUnit; label: string }> {
+  const cf = asC(food);
+  const units: Array<{ unit: LogUnit; label: string }> = [];
+  if (cf.gramsPerServing || cf.servingUnit === "g") {
+    units.push({ unit: "g",  label: "grams" });
+    units.push({ unit: "oz", label: "oz"    });
+  }
+  // Add "serving" only for non-gram foods (avoids showing "100g" twice for built-ins)
+  if (cf.servingUnit !== "g") {
+    units.push({ unit: "serving", label: formatServing(cf) });
+  }
+  if (units.length === 0) {
+    units.push({ unit: "serving", label: formatServing(cf) });
+  }
+  return units;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function CatHeader({ title }: { title: string }) {
@@ -701,7 +719,160 @@ function FoodRow({
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Quantity picker ─────────────────────────────────────────────────────────
+
+function QuantitySheet({
+  food,
+  initialAmount,
+  initialUnit,
+  isEditing,
+  onAdd,
+  onClose,
+}: {
+  food: AnyFood;
+  initialAmount?: string;
+  initialUnit?: LogUnit;
+  isEditing?: boolean;
+  onAdd: (amount: string, unit: LogUnit) => void;
+  onClose: () => void;
+}) {
+  const cf          = asC(food);
+  const pickerUnits = getPickerUnits(food);
+  const [unit,   setUnit]   = useState<LogUnit>(() => initialUnit ?? pickerUnits[0]?.unit ?? "serving");
+  const [amount, setAmount] = useState<string>(() => {
+    if (initialAmount) return initialAmount;
+    const u = pickerUnits[0]?.unit ?? "serving";
+    return u === "g" ? String(cf.servingAmount) : "1";
+  });
+
+  const amountNum = parseFloat(amount) || 0;
+  const servings  = amountNum > 0 ? toServings(cf, amountNum, unit) : 0;
+  const cal   = scaleMacro(food.calories, servings);
+  const pro   = scaleMacro(food.protein,  servings);
+  const carbs = scaleMacro(food.carbs,    servings);
+  const fat   = scaleMacro(food.fat,      servings);
+  const canAdd = amountNum > 0;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end justify-center"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.65)" }} />
+      <div
+        className="relative w-full max-w-[430px] space-y-5 rounded-t-3xl px-5 pb-10 pt-4"
+        style={{ backgroundColor: "var(--sf-bg)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex justify-center pt-1 pb-0">
+          <div className="h-1 w-10 rounded-full" style={{ backgroundColor: "var(--sf-text7)" }} />
+        </div>
+
+        {/* Food name */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+            How much did you eat?
+          </p>
+          <p className="mt-1 text-lg font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
+            {food.name}
+          </p>
+          {isBI(food) && (
+            <span
+              className="mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+              style={{ color: "#4ade80", backgroundColor: "rgba(74,222,128,0.08)" }}
+            >
+              Built-in
+            </span>
+          )}
+        </div>
+
+        {/* Amount + unit */}
+        <div className="flex items-stretch gap-3">
+          <input
+            type="number"
+            inputMode="decimal"
+            autoFocus
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0"
+            className="flex-1 rounded-2xl px-4 py-4 text-center text-3xl font-black outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "2px solid rgba(0,210,255,0.45)",
+              color: "#00d2ff",
+            }}
+          />
+          <select
+            value={unit}
+            onChange={(e) => setUnit(e.target.value as LogUnit)}
+            className="shrink-0 rounded-2xl px-3 py-4 text-sm font-bold outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text1)",
+              minWidth: 96,
+            }}
+          >
+            {pickerUnits.map((pu) => (
+              <option key={pu.unit} value={pu.unit} style={{ backgroundColor: "var(--sf-surface)" }}>
+                {pu.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Live macro preview */}
+        {amountNum > 0 && (
+          <div
+            className="rounded-2xl px-4 py-3"
+            style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
+          >
+            <p className="text-xl font-black" style={{ color: "var(--sf-text1)" }}>
+              {cal}
+              <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>cal</span>
+            </p>
+            <p className="mt-0.5 text-xs" style={{ color: "var(--sf-text5)" }}>
+              P{" "}<span className="font-bold" style={{ color: "#38bdf8" }}>{pro}g</span>
+              {"  ·  "}
+              C{" "}<span className="font-bold" style={{ color: "#a78bfa" }}>{carbs}g</span>
+              {"  ·  "}
+              F{" "}<span className="font-bold" style={{ color: "#fb7185" }}>{fat}g</span>
+            </p>
+          </div>
+        )}
+
+        {/* Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-2xl py-4 text-sm font-bold"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text5)",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { if (canAdd) onAdd(amount, unit); }}
+            disabled={!canAdd}
+            className="flex-[2] rounded-2xl py-4 text-sm font-black transition-all active:scale-[0.98]"
+            style={{
+              backgroundColor: canAdd ? "#00d2ff" : "var(--sf-border)",
+              color:           canAdd ? "#0a0a0a" : "var(--sf-text7)",
+            }}
+          >
+            {isEditing ? "Update Amount" : "Add to Meal"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Meal builder sheet ───────────────────────────────────────────────────────
 
 function MealBuilderSheet({
   foods,
@@ -719,11 +890,13 @@ function MealBuilderSheet({
   const biiFavSet = new Set(builtinFavIds);
 
   const hasAnyFavs = foods.some((f) => f.isFavorite) || builtinFavIds.length > 0;
-  const [tab,       setTab]       = useState<Tab>(hasAnyFavs ? "favorites" : "builtin");
-  const [search,    setSearch]    = useState("");
-  const [selected,  setSelected]  = useState<Set<string>>(new Set());
-  const [amountMap, setAmountMap] = useState<Record<string, string>>({});
-  const [unitMap,   setUnitMap]   = useState<Record<string, LogUnit>>({});
+  const [tab,         setTab]         = useState<Tab>(hasAnyFavs ? "favorites" : "builtin");
+  const [search,      setSearch]      = useState("");
+  const [selected,    setSelected]    = useState<Set<string>>(new Set());
+  const [amountMap,   setAmountMap]   = useState<Record<string, string>>({});
+  const [unitMap,     setUnitMap]     = useState<Record<string, LogUnit>>({});
+  const [pendingFood, setPendingFood] = useState<AnyFood | null>(null);
+  const [isEditing,   setIsEditing]   = useState(false);
 
   const sl = search.toLowerCase().trim();
   function matches(f: AnyFood) {
@@ -734,20 +907,30 @@ function MealBuilderSheet({
     );
   }
 
-  function toggleFood(food: AnyFood) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(food.id)) {
-        next.delete(food.id);
-        setAmountMap((m) => { const c = { ...m }; delete c[food.id]; return c; });
-        setUnitMap((m)   => { const c = { ...m }; delete c[food.id]; return c; });
-      } else {
-        next.add(food.id);
-        setAmountMap((m) => ({ ...m, [food.id]: defaultLogAmount(asC(food)) }));
-        setUnitMap((m)   => ({ ...m, [food.id]: defaultLogUnit(asC(food))   }));
-      }
-      return next;
-    });
+  // Tapping a new food opens the quantity picker.
+  // Tapping an already-selected food re-opens the picker to edit the amount.
+  function handleFoodTap(food: AnyFood) {
+    if (selected.has(food.id)) {
+      setIsEditing(true);
+    } else {
+      setIsEditing(false);
+    }
+    setPendingFood(food);
+  }
+
+  function handleQuantityAdd(amount: string, unit: LogUnit) {
+    if (!pendingFood) return;
+    setSelected((prev) => new Set([...prev, pendingFood.id]));
+    setAmountMap((m) => ({ ...m, [pendingFood.id]: amount }));
+    setUnitMap((m)   => ({ ...m, [pendingFood.id]: unit   }));
+    setPendingFood(null);
+    setIsEditing(false);
+  }
+
+  function removeFood(foodId: string) {
+    setSelected((prev) => { const next = new Set(prev); next.delete(foodId); return next; });
+    setAmountMap((m) => { const c = { ...m }; delete c[foodId]; return c; });
+    setUnitMap((m)   => { const c = { ...m }; delete c[foodId]; return c; });
   }
 
   function toggleBIFav(id: string) {
@@ -850,7 +1033,7 @@ function MealBuilderSheet({
                   food={food}
                   isSelected={selected.has(food.id)}
                   isFav={biiFavSet.has(food.id)}
-                  onToggle={() => toggleFood(food)}
+                  onToggle={() => handleFoodTap(food)}
                   onFavToggle={() => toggleBIFav(food.id)}
                 />
               ))}
@@ -865,7 +1048,7 @@ function MealBuilderSheet({
                   food={food}
                   isSelected={selected.has(food.id)}
                   isFav={false}
-                  onToggle={() => toggleFood(food)}
+                  onToggle={() => handleFoodTap(food)}
                 />
               ))}
             </>
@@ -910,7 +1093,7 @@ function MealBuilderSheet({
               food={food}
               isSelected={selected.has(food.id)}
               isFav={false}
-              onToggle={() => toggleFood(food)}
+              onToggle={() => handleFoodTap(food)}
             />
           ))}
         </>
@@ -953,7 +1136,7 @@ function MealBuilderSheet({
                 food={food}
                 isSelected={selected.has(food.id)}
                 isFav={true}
-                onToggle={() => toggleFood(food)}
+                onToggle={() => handleFoodTap(food)}
                 onFavToggle={() => toggleBIFav(food.id)}
               />
             ))}
@@ -968,7 +1151,7 @@ function MealBuilderSheet({
                 food={food}
                 isSelected={selected.has(food.id)}
                 isFav={false}
-                onToggle={() => toggleFood(food)}
+                onToggle={() => handleFoodTap(food)}
               />
             ))}
           </>
@@ -988,6 +1171,7 @@ function MealBuilderSheet({
   const canLog = selectedFoods.length > 0;
 
   return (
+    <>
     <SheetOverlay onClose={onClose}>
       <SheetHeader title="Build Meal" onClose={onClose} />
 
@@ -1034,104 +1218,91 @@ function MealBuilderSheet({
         />
       </div>
 
-      {/* Scrollable food list + Your Meal section */}
+      {/* Scrollable food list */}
       <div className="flex-1 overflow-y-auto">
         {renderList()}
-
-        {/* Your Meal */}
-        {selectedFoods.length > 0 && (
-          <div style={{ borderTop: "2px solid var(--sf-border2)" }}>
-            <CatHeader title="Your Meal" />
-            <div className="divide-y" style={{ borderColor: "var(--sf-border)" }}>
-              {selectedFoods.map((food) => {
-                const logUnits = getLogUnits(asC(food));
-                const unit     = unitMap[food.id] ?? defaultLogUnit(asC(food));
-                const s        = getServings(food);
-                const cal      = scaleMacro(food.calories, s);
-                const pro      = scaleMacro(food.protein,  s);
-                return (
-                  <div key={food.id} className="px-5 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="truncate text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
-                          {food.name}
-                        </p>
-                        <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
-                          {cal} cal · P {pro}g
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          value={amountMap[food.id] ?? ""}
-                          onChange={(e) =>
-                            setAmountMap((m) => ({ ...m, [food.id]: e.target.value }))
-                          }
-                          className="w-16 rounded-xl px-2 py-2 text-center text-sm font-bold outline-none"
-                          style={{
-                            backgroundColor: "var(--sf-surface)",
-                            border: "1px solid var(--sf-border2)",
-                            color: "var(--sf-text1)",
-                          }}
-                        />
-                        {logUnits.length > 1 ? (
-                          <select
-                            value={unit}
-                            onChange={(e) =>
-                              setUnitMap((m) => ({ ...m, [food.id]: e.target.value as LogUnit }))
-                            }
-                            className="rounded-xl px-2 py-2 text-xs font-bold outline-none"
-                            style={{
-                              backgroundColor: "var(--sf-surface)",
-                              border: "1px solid var(--sf-border2)",
-                              color: "var(--sf-text1)",
-                              maxWidth: 80,
-                            }}
-                          >
-                            {logUnits.map((lu) => (
-                              <option
-                                key={lu.unit}
-                                value={lu.unit}
-                                style={{ backgroundColor: "var(--sf-surface)" }}
-                              >
-                                {lu.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className="text-xs" style={{ color: "var(--sf-text5)" }}>
-                            {logUnits[0]?.label ?? ""}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Running total */}
-            <div
-              className="mx-5 my-3 rounded-2xl px-5 py-3.5"
-              style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
-            >
-              <p className="text-xl font-black" style={{ color: "var(--sf-text1)" }}>
-                {totals.calories}
-                <span className="ml-1 text-sm font-medium" style={{ color: "var(--sf-text6)" }}>cal</span>
-              </p>
-              <p className="mt-1 text-xs" style={{ color: "var(--sf-text5)" }}>
-                P{" "}
-                <span className="font-bold" style={{ color: "#38bdf8" }}>{totals.protein}g</span>
-                {"  ·  "}C{" "}
-                <span className="font-bold" style={{ color: "#a78bfa" }}>{totals.carbs}g</span>
-                {"  ·  "}F{" "}
-                <span className="font-bold" style={{ color: "#fb7185" }}>{totals.fat}g</span>
-              </p>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Your Meal — sticky section, always above footer when foods are selected */}
+      {selectedFoods.length > 0 && (
+        <div
+          className="shrink-0 overflow-y-auto"
+          style={{
+            borderTop: "2px solid var(--sf-border2)",
+            maxHeight: "30dvh",
+          }}
+        >
+          {/* Header + total */}
+          <div
+            className="sticky top-0 flex items-center justify-between px-5 py-2"
+            style={{ backgroundColor: "var(--sf-bg)", borderBottom: "1px solid var(--sf-border)" }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+              Your Meal
+            </p>
+            <p className="text-xs font-black" style={{ color: "var(--sf-text1)" }}>
+              {totals.calories}
+              <span className="ml-0.5 text-[10px] font-medium" style={{ color: "var(--sf-text6)" }}>cal</span>
+              {"  "}
+              <span className="text-[10px] font-medium" style={{ color: "#38bdf8" }}>P {totals.protein}g</span>
+            </p>
+          </div>
+
+          {/* Selected food rows */}
+          {selectedFoods.map((food) => {
+            const amt      = amountMap[food.id] ?? "";
+            const unit     = unitMap[food.id] ?? defaultLogUnit(asC(food));
+            const s        = getServings(food);
+            const cal      = scaleMacro(food.calories, s);
+            const pro      = scaleMacro(food.protein,  s);
+            const unitLabel = unit === "serving" ? formatServing(asC(food)) : unit;
+            return (
+              <div
+                key={food.id}
+                className="flex items-center gap-2 px-4 py-2.5"
+                style={{ borderBottom: "1px solid var(--sf-border)" }}
+              >
+                {/* Tap row to re-open quantity picker */}
+                <button
+                  className="flex-1 min-w-0 text-left"
+                  onClick={() => handleFoodTap(food)}
+                >
+                  <p className="truncate text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
+                    {food.name}
+                  </p>
+                  <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
+                    <span style={{ color: "#00d2ff" }}>{amt} {unitLabel}</span>
+                    {" · "}{cal} cal · P {pro}g
+                  </p>
+                </button>
+
+                {/* Edit button */}
+                <button
+                  onClick={() => handleFoodTap(food)}
+                  className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: "rgba(0,210,255,0.08)", color: "#00d2ff" }}
+                  aria-label="Edit amount"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+
+                {/* Remove button */}
+                <button
+                  onClick={() => removeFood(food.id)}
+                  className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl text-base font-black leading-none"
+                  style={{ backgroundColor: "rgba(255,80,80,0.08)", color: "#ff6060" }}
+                  aria-label="Remove from meal"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Footer */}
       <div className="shrink-0 px-5 py-4" style={{ borderTop: "1px solid var(--sf-border)" }}>
@@ -1148,6 +1319,17 @@ function MealBuilderSheet({
         </button>
       </div>
     </SheetOverlay>
+    {pendingFood && (
+      <QuantitySheet
+        food={pendingFood}
+        initialAmount={isEditing ? amountMap[pendingFood.id] : undefined}
+        initialUnit={isEditing   ? unitMap[pendingFood.id]   : undefined}
+        isEditing={isEditing}
+        onAdd={handleQuantityAdd}
+        onClose={() => { setPendingFood(null); setIsEditing(false); }}
+      />
+    )}
+    </>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useApp } from "@/context/AppContext";
 import { upsertProfile } from "@/lib/db/profiles";
 import {
   type Profile,
@@ -154,6 +155,7 @@ function getErrorMessage(err: unknown): string {
 export default function OnboardingPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { dispatch } = useApp();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -198,6 +200,15 @@ export default function OnboardingPage() {
     setSaveError("");
     try {
       await upsertProfile(user.id, { ...profile, onboardingCompleted: true });
+      dispatch({
+        type: "SET_GOALS",
+        payload: {
+          calories: profile.calorieGoal,
+          protein:  profile.proteinGoalG,
+          carbs:    profile.carbsGoalG,
+          fat:      profile.fatGoalG,
+        },
+      });
       router.push("/");
     } catch (err: unknown) {
       if (process.env.NODE_ENV === "development") {

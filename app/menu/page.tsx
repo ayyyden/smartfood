@@ -197,14 +197,13 @@ function AddFoodForm({
   const [pro100, setPro100]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [lookupLabel, setLabel] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
-  const [manualMode, setManual] = useState(false);
+  const [lookupMiss,  setMiss]  = useState(false);
 
   async function handleLookup() {
     if (!name.trim()) return;
     setLoading(true);
     setLabel(null);
-    setNotFound(false);
+    setMiss(false);
     try {
       const res = await fetch(
         `/api/lookup-food?name=${encodeURIComponent(name.trim())}`
@@ -218,12 +217,10 @@ function AddFoodForm({
         setPro100(String(data.protein100));
         setLabel(data.label);
       } else {
-        setNotFound(true);
-        setManual(true);
+        setMiss(true);
       }
     } catch {
-      setNotFound(true);
-      setManual(true);
+      setMiss(true);
     } finally {
       setLoading(false);
     }
@@ -235,8 +232,7 @@ function AddFoodForm({
     setCal100("");
     setPro100("");
     setLabel(null);
-    setNotFound(false);
-    setManual(false);
+    setMiss(false);
   }
 
   const cal100Num = parseFloat(cal100);
@@ -259,8 +255,7 @@ function AddFoodForm({
     reset();
   }
 
-  const showFields = !!cal100 || manualMode;
-  const canAdd     = !!portionG && portionG > 0 && !!name.trim();
+  const canAdd = !!portionG && portionG > 0 && !!name.trim();
 
   if (!open) {
     return (
@@ -279,101 +274,93 @@ function AddFoodForm({
       className="mt-3 space-y-2.5 rounded-xl px-4 py-3"
       style={{ backgroundColor: "var(--sf-surface3)", border: "1px solid var(--sf-border2)" }}
     >
-      {/* Search row */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="e.g. steak, salmon, rice..."
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            setLabel(null);
-            setNotFound(false);
-            setCal100("");
-            setPro100("");
-          }}
-          onKeyDown={(e) => e.key === "Enter" && handleLookup()}
-          className="min-w-0 flex-1 rounded-xl px-3 py-2 text-xs outline-none"
-          style={{
-            backgroundColor: "var(--sf-surface)",
-            border: "1px solid var(--sf-border2)",
-            color: "var(--sf-text1)",
-          }}
-          autoFocus
-        />
-        <button
-          onClick={handleLookup}
-          disabled={loading || !name.trim()}
-          className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold"
-          style={{
-            backgroundColor: name.trim() ? `${color}22` : "var(--sf-border)",
-            color: name.trim() ? color : "var(--sf-text7)",
-          }}
-        >
-          {loading ? "…" : "Look up"}
-        </button>
+      {/* Name row */}
+      <div>
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+          Food name
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="e.g. steak, salmon, rice..."
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setLabel(null);
+              setMiss(false);
+              setCal100("");
+              setPro100("");
+            }}
+            onKeyDown={(e) => e.key === "Enter" && handleLookup()}
+            className="min-w-0 flex-1 rounded-xl px-3 py-2 text-xs outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text1)",
+            }}
+            autoFocus
+          />
+          <button
+            onClick={handleLookup}
+            disabled={loading || !name.trim()}
+            className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold"
+            style={{
+              backgroundColor: name.trim() ? `${color}18` : "var(--sf-border)",
+              color: name.trim() ? color : "var(--sf-text7)",
+            }}
+          >
+            {loading ? "…" : "Look up"}
+          </button>
+        </div>
+        {lookupLabel && (
+          <p className="mt-1.5 text-[11px] font-semibold" style={{ color: "#4ade80" }}>
+            ✓ Auto-filled from {lookupLabel}
+          </p>
+        )}
+        {lookupMiss && (
+          <p className="mt-1.5 text-[11px]" style={{ color: "var(--sf-text6)" }}>
+            Not in our database — fill in below manually.
+          </p>
+        )}
       </div>
 
-      {lookupLabel && (
-        <p className="text-[11px] font-semibold" style={{ color: "#4ade80" }}>
-          ✓ {lookupLabel}
-        </p>
-      )}
-
-      {notFound && (
-        <p className="text-[11px]" style={{ color: "#f43f5e" }}>
-          Not found in database — enter values manually below.
-        </p>
-      )}
-
-      {!showFields && !loading && name.trim() && !lookupLabel && !notFound && (
-        <button
-          className="text-[11px] font-semibold"
-          style={{ color: "var(--sf-text5)" }}
-          onClick={() => setManual(true)}
-        >
-          Enter manually instead
-        </button>
-      )}
-
-      {showFields && (
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text5)" }}>
-              Cal per 100g
-            </p>
-            <input
-              type="number"
-              placeholder="e.g. 271"
-              value={cal100}
-              onChange={(e) => setCal100(e.target.value)}
-              className="w-full rounded-xl px-3 py-2 text-xs outline-none"
-              style={{
-                backgroundColor: "var(--sf-surface)",
-                border: "1px solid var(--sf-border2)",
-                color: "var(--sf-text1)",
-              }}
-            />
-          </div>
-          <div>
-            <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text5)" }}>
-              Protein per 100g
-            </p>
-            <input
-              type="number"
-              placeholder="e.g. 26"
-              value={pro100}
-              onChange={(e) => setPro100(e.target.value)}
-              className="w-full rounded-xl px-3 py-2 text-xs outline-none"
-              style={{
-                backgroundColor: "var(--sf-surface)",
-                border: "1px solid var(--sf-border2)",
-                color: "var(--sf-text1)",
-              }}
-            />
-          </div>
+      {/* Nutrition fields — always visible */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+            Cal / 100g
+          </p>
+          <input
+            type="number"
+            placeholder="e.g. 271"
+            value={cal100}
+            onChange={(e) => setCal100(e.target.value)}
+            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text1)",
+            }}
+          />
         </div>
-      )}
+        <div>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+            Protein / 100g
+          </p>
+          <input
+            type="number"
+            placeholder="e.g. 26"
+            value={pro100}
+            onChange={(e) => setPro100(e.target.value)}
+            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text1)",
+            }}
+          />
+        </div>
+      </div>
 
       {portionG !== null && portionG > 0 && (
         <div
