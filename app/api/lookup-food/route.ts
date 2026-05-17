@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { usdaLookup } from "@/lib/usdaLookup";
 
 export type LookupResult =
-  | { found: true;  label: string; cal100: number; protein100: number }
+  | { found: true; label: string; cal100: number; protein100: number; carbs100: number; fat100: number }
   | { found: false };
 
 export async function GET(req: NextRequest) {
@@ -20,5 +20,7 @@ export async function GET(req: NextRequest) {
     label:      result.source,
     cal100:     Math.round(result.values.calories),
     protein100: Math.round(result.values.protein),
+    carbs100:   Math.round(result.values.carbs),
+    fat100:     Math.round(result.values.fat),
   } satisfies LookupResult);
 }

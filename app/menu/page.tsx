@@ -195,6 +195,8 @@ function AddFoodForm({
   const [name, setName]         = useState("");
   const [cal100, setCal100]     = useState("");
   const [pro100, setPro100]     = useState("");
+  const [carbs100, setCarbs100] = useState("");
+  const [fat100,   setFat100]   = useState("");
   const [loading, setLoading]   = useState(false);
   const [lookupLabel, setLabel] = useState<string | null>(null);
   const [lookupMiss,  setMiss]  = useState(false);
@@ -209,12 +211,14 @@ function AddFoodForm({
         `/api/lookup-food?name=${encodeURIComponent(name.trim())}`
       );
       const data = (await res.json()) as
-        | { found: true; label: string; cal100: number; protein100: number }
+        | { found: true; label: string; cal100: number; protein100: number; carbs100: number; fat100: number }
         | { found: false };
 
       if (data.found) {
         setCal100(String(data.cal100));
         setPro100(String(data.protein100));
+        setCarbs100(String(data.carbs100));
+        setFat100(String(data.fat100));
         setLabel(data.label);
       } else {
         setMiss(true);
@@ -231,17 +235,23 @@ function AddFoodForm({
     setName("");
     setCal100("");
     setPro100("");
+    setCarbs100("");
+    setFat100("");
     setLabel(null);
     setMiss(false);
   }
 
-  const cal100Num = parseFloat(cal100);
-  const pro100Num = parseFloat(pro100) || 0;
-  const portionG  = cal100Num > 0
+  const cal100Num   = parseFloat(cal100);
+  const pro100Num   = parseFloat(pro100)   || 0;
+  const carbs100Num = parseFloat(carbs100) || 0;
+  const fat100Num   = parseFloat(fat100)   || 0;
+  const portionG    = cal100Num > 0
     ? Math.round(calTarget / (cal100Num / 100))
     : null;
-  const portionCal = portionG !== null ? Math.round(cal100Num * portionG / 100) : null;
-  const portionPro = portionG !== null ? Math.round(pro100Num * portionG / 100) : null;
+  const portionCal   = portionG !== null ? Math.round(cal100Num   * portionG / 100) : null;
+  const portionPro   = portionG !== null ? Math.round(pro100Num   * portionG / 100) : null;
+  const portionCarbs = portionG !== null ? Math.round(carbs100Num * portionG / 100) : null;
+  const portionFat   = portionG !== null ? Math.round(fat100Num   * portionG / 100) : null;
 
   function handleAdd() {
     if (!name.trim() || portionG === null || portionG <= 0) return;
@@ -319,7 +329,7 @@ function AddFoodForm({
         )}
         {lookupMiss && (
           <p className="mt-1.5 text-[11px]" style={{ color: "var(--sf-text6)" }}>
-            Not in our database — fill in below manually.
+            We couldn&apos;t find this food. You can enter it manually below.
           </p>
         )}
       </div>
@@ -360,6 +370,40 @@ function AddFoodForm({
             }}
           />
         </div>
+        <div>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+            Carbs / 100g
+          </p>
+          <input
+            type="number"
+            placeholder="e.g. 0"
+            value={carbs100}
+            onChange={(e) => setCarbs100(e.target.value)}
+            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text1)",
+            }}
+          />
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+            Fat / 100g
+          </p>
+          <input
+            type="number"
+            placeholder="e.g. 10"
+            value={fat100}
+            onChange={(e) => setFat100(e.target.value)}
+            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text1)",
+            }}
+          />
+        </div>
       </div>
 
       {portionG !== null && portionG > 0 && (
@@ -371,7 +415,9 @@ function AddFoodForm({
             For {tierLabel}: ~{portionG}g
           </p>
           <p className="mt-0.5 text-[11px]" style={{ color: "var(--sf-text3)" }}>
-            ≈ {portionCal} cal · {portionPro}g protein
+            ≈ {portionCal} cal · {portionPro}g P
+            {portionCarbs !== null && portionCarbs > 0 ? ` · ${portionCarbs}g C` : ""}
+            {portionFat   !== null && portionFat   > 0 ? ` · ${portionFat}g F`   : ""}
           </p>
         </div>
       )}

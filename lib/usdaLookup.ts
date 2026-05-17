@@ -17,6 +17,13 @@ const ALIASES: Record<string, string> = {
   "veggies":            "mixed vegetables",
   "chicken breast":     "chicken breast meat cooked roasted",
   "chicken thigh":      "chicken thigh meat cooked roasted",
+  "chicken wings":      "chicken wing meat and skin cooked roasted",
+  "chicken wing":       "chicken wing meat and skin cooked roasted",
+  "wings":              "chicken wing meat and skin cooked roasted",
+  "chicken drumstick":  "chicken drumstick meat and skin cooked roasted",
+  "chicken drumsticks": "chicken drumstick meat and skin cooked roasted",
+  "chicken legs":       "chicken leg meat and skin cooked roasted",
+  "chicken leg":        "chicken leg meat and skin cooked roasted",
   "white rice":         "rice white long-grain cooked",
   "brown rice":         "rice brown long-grain cooked",
   "rice":               "rice white long-grain cooked",
@@ -25,6 +32,9 @@ const ALIASES: Record<string, string> = {
   "beef":               "beef ground cooked",
   "salmon":             "salmon cooked dry heat",
   "tuna":               "tuna canned water",
+  "tilapia":            "fish tilapia cooked dry heat",
+  "shrimp":             "shrimp cooked moist heat",
+  "cod":                "fish cod cooked dry heat",
   "greek yogurt":       "yogurt greek plain nonfat",
   "yogurt":             "yogurt plain whole milk",
   "whole milk":         "milk whole 3.25%",
@@ -99,14 +109,16 @@ type USDASearchFood = {
 
 function extractPer100g(foodNutrients: USDANutrient[]): MacroValues | null {
   const find = (id: number) => foodNutrients.find((n) => n.nutrientId === id)?.value ?? null;
-
   const calories = find(NID.calories);
-  const protein  = find(NID.protein);
-  const carbs    = find(NID.carbs);
-  const fat      = find(NID.fat);
-
-  if (calories === null || protein === null || carbs === null || fat === null) return null;
-  return { calories, protein, carbs, fat };
+  // Only calories is required. Protein/carbs/fat default to 0 when USDA omits them
+  // (e.g. pure-meat entries often have no carbs row — 0 is correct for chicken wings).
+  if (calories === null) return null;
+  return {
+    calories,
+    protein: find(NID.protein) ?? 0,
+    carbs:   find(NID.carbs)   ?? 0,
+    fat:     find(NID.fat)     ?? 0,
+  };
 }
 
 /**
@@ -127,7 +139,7 @@ export async function usdaLookup(
     query,
     api_key: apiKey,
     dataType: "Foundation,SR Legacy",
-    pageSize: "5",
+    pageSize: "10",
     nutrients: `${NID.calories},${NID.protein},${NID.fat},${NID.carbs}`,
   });
 
