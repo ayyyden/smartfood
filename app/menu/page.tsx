@@ -193,10 +193,11 @@ function AddFoodForm({
 }) {
   const [open, setOpen]         = useState(false);
   const [name, setName]         = useState("");
-  const [cal100, setCal100]     = useState("");
-  const [pro100, setPro100]     = useState("");
-  const [carbs100, setCarbs100] = useState("");
-  const [fat100,   setFat100]   = useState("");
+  const [portion, setPortion]   = useState("");
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein]   = useState("");
+  const [carbs, setCarbs]       = useState("");
+  const [fat, setFat]           = useState("");
   const [loading, setLoading]   = useState(false);
   const [lookupLabel, setLabel] = useState<string | null>(null);
   const [lookupMiss,  setMiss]  = useState(false);
@@ -207,18 +208,19 @@ function AddFoodForm({
     setLabel(null);
     setMiss(false);
     try {
-      const res = await fetch(
-        `/api/lookup-food?name=${encodeURIComponent(name.trim())}`
-      );
+      const res  = await fetch(`/api/lookup-food?name=${encodeURIComponent(name.trim())}`);
       const data = (await res.json()) as
         | { found: true; label: string; cal100: number; protein100: number; carbs100: number; fat100: number }
         | { found: false };
 
-      if (data.found) {
-        setCal100(String(data.cal100));
-        setPro100(String(data.protein100));
-        setCarbs100(String(data.carbs100));
-        setFat100(String(data.fat100));
+      if (data.found && data.cal100 > 0) {
+        // Convert per-100g values to a calTarget-sized portion
+        const portionG = Math.round(calTarget / (data.cal100 / 100));
+        setPortion(`${portionG}g`);
+        setCalories(String(Math.round(data.cal100     * portionG / 100)));
+        setProtein( String(Math.round(data.protein100 * portionG / 100)));
+        setCarbs(   String(Math.round(data.carbs100   * portionG / 100)));
+        setFat(     String(Math.round(data.fat100     * portionG / 100)));
         setLabel(data.label);
       } else {
         setMiss(true);
@@ -233,39 +235,32 @@ function AddFoodForm({
   function reset() {
     setOpen(false);
     setName("");
-    setCal100("");
-    setPro100("");
-    setCarbs100("");
-    setFat100("");
+    setPortion("");
+    setCalories("");
+    setProtein("");
+    setCarbs("");
+    setFat("");
     setLabel(null);
     setMiss(false);
   }
 
-  const cal100Num   = parseFloat(cal100);
-  const pro100Num   = parseFloat(pro100)   || 0;
-  const carbs100Num = parseFloat(carbs100) || 0;
-  const fat100Num   = parseFloat(fat100)   || 0;
-  const portionG    = cal100Num > 0
-    ? Math.round(calTarget / (cal100Num / 100))
-    : null;
-  const portionCal   = portionG !== null ? Math.round(cal100Num   * portionG / 100) : null;
-  const portionPro   = portionG !== null ? Math.round(pro100Num   * portionG / 100) : null;
-  const portionCarbs = portionG !== null ? Math.round(carbs100Num * portionG / 100) : null;
-  const portionFat   = portionG !== null ? Math.round(fat100Num   * portionG / 100) : null;
+  const calNum  = parseFloat(calories) || 0;
+  const proNum  = parseFloat(protein)  || 0;
+  const carbNum = parseFloat(carbs)    || 0;
+  const fatNum  = parseFloat(fat)      || 0;
+  const canAdd  = name.trim() !== "" && calNum > 0;
 
   function handleAdd() {
-    if (!name.trim() || portionG === null || portionG <= 0) return;
+    if (!canAdd) return;
     onAdd({
       name:     name.trim(),
-      portion:  `${portionG}g`,
-      calories: portionCal ?? 0,
-      protein:  portionPro ?? 0,
+      portion:  portion.trim() || "1 serving",
+      calories: calNum,
+      protein:  proNum,
       contains: [],
     });
     reset();
   }
-
-  const canAdd = !!portionG && portionG > 0 && !!name.trim();
 
   if (!open) {
     return (
@@ -284,31 +279,25 @@ function AddFoodForm({
       className="mt-3 space-y-2.5 rounded-xl px-4 py-3"
       style={{ backgroundColor: "var(--sf-surface3)", border: "1px solid var(--sf-border2)" }}
     >
-      {/* Name row */}
+      {/* Name + lookup */}
       <div>
         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-          Food name
+          Food name <span style={{ color }}>*</span>
         </p>
         <div className="flex gap-2">
           <input
             type="text"
             placeholder="e.g. steak, salmon, rice..."
             value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setLabel(null);
-              setMiss(false);
-              setCal100("");
-              setPro100("");
-            }}
+            onChange={(e) => { setName(e.target.value); setLabel(null); setMiss(false); }}
             onKeyDown={(e) => e.key === "Enter" && handleLookup()}
+            autoFocus
             className="min-w-0 flex-1 rounded-xl px-3 py-2 text-xs outline-none"
             style={{
               backgroundColor: "var(--sf-surface)",
               border: "1px solid var(--sf-border2)",
               color: "var(--sf-text1)",
             }}
-            autoFocus
           />
           <button
             onClick={handleLookup}
@@ -329,39 +318,63 @@ function AddFoodForm({
         )}
         {lookupMiss && (
           <p className="mt-1.5 text-[11px]" style={{ color: "var(--sf-text6)" }}>
-            We couldn&apos;t find this food. You can enter it manually below.
+            Not found — enter values manually below.
           </p>
         )}
       </div>
 
-      {/* Nutrition fields — always visible */}
+      {/* Portion label (optional) */}
+      <div>
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+          Portion{" "}
+          <span className="normal-case font-normal tracking-normal" style={{ color: "var(--sf-text7)" }}>
+            (optional)
+          </span>
+        </p>
+        <input
+          type="text"
+          placeholder="e.g. 200g, 1 cup, 1 serving"
+          value={portion}
+          onChange={(e) => setPortion(e.target.value)}
+          className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+          style={{
+            backgroundColor: "var(--sf-surface)",
+            border: "1px solid var(--sf-border2)",
+            color: "var(--sf-text1)",
+          }}
+        />
+      </div>
+
+      {/* Macros — calories required, rest optional */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Cal / 100g
+            Calories <span style={{ color }}>*</span>
           </p>
           <input
             type="number"
-            placeholder="e.g. 271"
-            value={cal100}
-            onChange={(e) => setCal100(e.target.value)}
+            inputMode="decimal"
+            placeholder="e.g. 250"
+            value={calories}
+            onChange={(e) => setCalories(e.target.value)}
             className="w-full rounded-xl px-3 py-2 text-xs outline-none"
             style={{
               backgroundColor: "var(--sf-surface)",
-              border: "1px solid var(--sf-border2)",
+              border: calNum > 0 ? `1px solid ${color}66` : "1px solid var(--sf-border2)",
               color: "var(--sf-text1)",
             }}
           />
         </div>
         <div>
           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Protein / 100g
+            Protein (g)
           </p>
           <input
             type="number"
+            inputMode="decimal"
             placeholder="e.g. 26"
-            value={pro100}
-            onChange={(e) => setPro100(e.target.value)}
+            value={protein}
+            onChange={(e) => setProtein(e.target.value)}
             className="w-full rounded-xl px-3 py-2 text-xs outline-none"
             style={{
               backgroundColor: "var(--sf-surface)",
@@ -372,13 +385,14 @@ function AddFoodForm({
         </div>
         <div>
           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Carbs / 100g
+            Carbs (g)
           </p>
           <input
             type="number"
-            placeholder="e.g. 0"
-            value={carbs100}
-            onChange={(e) => setCarbs100(e.target.value)}
+            inputMode="decimal"
+            placeholder="0"
+            value={carbs}
+            onChange={(e) => setCarbs(e.target.value)}
             className="w-full rounded-xl px-3 py-2 text-xs outline-none"
             style={{
               backgroundColor: "var(--sf-surface)",
@@ -389,13 +403,14 @@ function AddFoodForm({
         </div>
         <div>
           <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Fat / 100g
+            Fat (g)
           </p>
           <input
             type="number"
-            placeholder="e.g. 10"
-            value={fat100}
-            onChange={(e) => setFat100(e.target.value)}
+            inputMode="decimal"
+            placeholder="0"
+            value={fat}
+            onChange={(e) => setFat(e.target.value)}
             className="w-full rounded-xl px-3 py-2 text-xs outline-none"
             style={{
               backgroundColor: "var(--sf-surface)",
@@ -406,20 +421,25 @@ function AddFoodForm({
         </div>
       </div>
 
-      {portionG !== null && portionG > 0 && (
-        <div
-          className="rounded-xl px-3 py-2.5"
-          style={{ backgroundColor: `${color}0d` }}
-        >
+      {/* Preview */}
+      {calNum > 0 && (
+        <div className="rounded-xl px-3 py-2.5" style={{ backgroundColor: `${color}0d` }}>
           <p className="text-xs font-bold" style={{ color }}>
-            For {tierLabel}: ~{portionG}g
+            {portion.trim() || "1 serving"} — {calNum} cal
           </p>
           <p className="mt-0.5 text-[11px]" style={{ color: "var(--sf-text3)" }}>
-            ≈ {portionCal} cal · {portionPro}g P
-            {portionCarbs !== null && portionCarbs > 0 ? ` · ${portionCarbs}g C` : ""}
-            {portionFat   !== null && portionFat   > 0 ? ` · ${portionFat}g F`   : ""}
+            P {proNum}g
+            {carbNum > 0 ? ` · C ${carbNum}g` : ""}
+            {fatNum  > 0 ? ` · F ${fatNum}g`  : ""}
           </p>
         </div>
+      )}
+
+      {/* Hint when name is entered but calories missing */}
+      {!canAdd && name.trim() !== "" && calNum === 0 && (
+        <p className="text-[10px]" style={{ color: "var(--sf-text7)" }}>
+          Enter calories to enable adding.
+        </p>
       )}
 
       <div className="flex gap-2">

@@ -28,6 +28,7 @@ const ALIASES: Record<string, string> = {
   "brown rice":         "rice brown long-grain cooked",
   "rice":               "rice white long-grain cooked",
   "pasta":              "pasta cooked",
+  "steak":              "beef steak cooked",
   "ground beef":        "beef ground cooked",
   "beef":               "beef ground cooked",
   "salmon":             "salmon cooked dry heat",
