@@ -122,6 +122,68 @@ function extractPer100g(foodNutrients: USDANutrient[]): MacroValues | null {
   };
 }
 
+// ─── Multi-result search (used by /api/lookup-food for the Food Menu) ────────
+
+export type USDAMatch = {
+  fdcId:       number;
+  description: string;
+  dataType:    string;
+  cal100:      number;
+  protein100:  number;
+  carbs100:    number;
+  fat100:      number;
+};
+
+export async function usdaSearch(
+  foodName: string,
+  apiKey:   string,
+  pageSize  = 10,
+): Promise<USDAMatch[]> {
+  const query  = buildQuery(foodName);
+  const params = new URLSearchParams({
+    query,
+    api_key:   apiKey,
+    dataType:  "Foundation,SR Legacy",
+    pageSize:  String(pageSize),
+    nutrients: `${NID.calories},${NID.protein},${NID.fat},${NID.carbs}`,
+  });
+
+  let foods: USDASearchFood[];
+  try {
+    const res = await fetch(`${USDA_BASE}/foods/search?${params}`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) {
+      console.warn(`[usda] Search HTTP ${res.status} for "${foodName}" (query: "${query}")`);
+      return [];
+    }
+    const data = await res.json() as { foods?: USDASearchFood[] };
+    foods = data.foods ?? [];
+  } catch (err) {
+    console.warn(`[usda] Network error for "${foodName}":`, err);
+    return [];
+  }
+
+  const out: USDAMatch[] = [];
+  for (const food of foods) {
+    const per100g = extractPer100g(food.foodNutrients);
+    if (!per100g) continue;
+    out.push({
+      fdcId:       food.fdcId,
+      description: food.description,
+      dataType:    food.dataType,
+      cal100:      Math.round(per100g.calories),
+      protein100:  Math.round(per100g.protein),
+      carbs100:    Math.round(per100g.carbs),
+      fat100:      Math.round(per100g.fat),
+    });
+  }
+  console.info(`[usda] "${foodName}" → ${out.length} results (query: "${query}")`);
+  return out;
+}
+
+// ─── Single-result lookup (used by Pro Mode / parse-food) ────────────────────
+
 /**
  * Look up nutrition for a food item from USDA FoodData Central.
  * Returns macros scaled to the provided gram weight, or null on failure.

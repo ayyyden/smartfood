@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { usdaLookup } from "@/lib/usdaLookup";
+import { usdaSearch, type USDAMatch } from "@/lib/usdaLookup";
+
+export type LookupMatch = USDAMatch;
 
 export type LookupResult =
-  | { found: true; label: string; cal100: number; protein100: number; carbs100: number; fat100: number }
+  | { found: true;  matches: LookupMatch[] }
   | { found: false };
 
 export async function GET(req: NextRequest) {
@@ -10,17 +12,11 @@ export async function GET(req: NextRequest) {
   if (!name) return NextResponse.json({ found: false } satisfies LookupResult);
 
   const usdaKey = process.env.USDA_API_KEY ?? "DEMO_KEY";
-  // Pass 100g → factor=1 → result.values are already per-100g
-  const result = await usdaLookup(name, 100, usdaKey);
+  const matches = await usdaSearch(name, usdaKey, 10);
 
-  if (!result) return NextResponse.json({ found: false } satisfies LookupResult);
+  if (matches.length === 0) {
+    return NextResponse.json({ found: false } satisfies LookupResult);
+  }
 
-  return NextResponse.json({
-    found:      true,
-    label:      result.source,
-    cal100:     Math.round(result.values.calories),
-    protein100: Math.round(result.values.protein),
-    carbs100:   Math.round(result.values.carbs),
-    fat100:     Math.round(result.values.fat),
-  } satisfies LookupResult);
+  return NextResponse.json({ found: true, matches } satisfies LookupResult);
 }

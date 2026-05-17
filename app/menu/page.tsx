@@ -180,83 +180,84 @@ function FoodSection({
 
 // ─── Add food form ────────────────────────────────────────────────────────────
 
+type LookupMatch = {
+  fdcId:       number;
+  description: string;
+  dataType:    string;
+  cal100:      number;
+  protein100:  number;
+  carbs100:    number;
+  fat100:      number;
+};
+
 function AddFoodForm({
   tierLabel,
-  calTarget,
   color,
   onAdd,
 }: {
   tierLabel: string;
-  calTarget: number;
   color: string;
   onAdd: (food: FoodOption) => void;
 }) {
-  const [open, setOpen]         = useState(false);
-  const [name, setName]         = useState("");
-  const [portion, setPortion]   = useState("");
-  const [calories, setCalories] = useState("");
-  const [protein, setProtein]   = useState("");
-  const [carbs, setCarbs]       = useState("");
-  const [fat, setFat]           = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [lookupLabel, setLabel] = useState<string | null>(null);
-  const [lookupMiss,  setMiss]  = useState(false);
+  const [open,        setOpen]        = useState(false);
+  const [name,        setName]        = useState("");
+  const [loading,     setLoading]     = useState(false);
+  const [results,     setResults]     = useState<LookupMatch[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [showManual,  setShowManual]  = useState(false);
+
+  // Manual fallback state
+  const [mPortion, setMPortion] = useState("");
+  const [mCal,     setMCal]     = useState("");
+  const [mPro,     setMPro]     = useState("");
 
   async function handleLookup() {
     if (!name.trim()) return;
     setLoading(true);
-    setLabel(null);
-    setMiss(false);
+    setResults([]);
+    setHasSearched(false);
+    setShowManual(false);
     try {
       const res  = await fetch(`/api/lookup-food?name=${encodeURIComponent(name.trim())}`);
-      const data = (await res.json()) as
-        | { found: true; label: string; cal100: number; protein100: number; carbs100: number; fat100: number }
-        | { found: false };
-
-      if (data.found && data.cal100 > 0) {
-        // Convert per-100g values to a calTarget-sized portion
-        const portionG = Math.round(calTarget / (data.cal100 / 100));
-        setPortion(`${portionG}g`);
-        setCalories(String(Math.round(data.cal100     * portionG / 100)));
-        setProtein( String(Math.round(data.protein100 * portionG / 100)));
-        setCarbs(   String(Math.round(data.carbs100   * portionG / 100)));
-        setFat(     String(Math.round(data.fat100     * portionG / 100)));
-        setLabel(data.label);
-      } else {
-        setMiss(true);
-      }
+      const data = await res.json() as { found: boolean; matches?: LookupMatch[] };
+      setResults(data.found && data.matches ? data.matches : []);
     } catch {
-      setMiss(true);
-    } finally {
-      setLoading(false);
+      setResults([]);
     }
+    setHasSearched(true);
+    setLoading(false);
+  }
+
+  function handleSelect(match: LookupMatch) {
+    onAdd({
+      name:     match.description,
+      portion:  "100g",
+      calories: match.cal100,
+      protein:  match.protein100,
+      contains: [],
+    });
+    reset();
   }
 
   function reset() {
     setOpen(false);
     setName("");
-    setPortion("");
-    setCalories("");
-    setProtein("");
-    setCarbs("");
-    setFat("");
-    setLabel(null);
-    setMiss(false);
+    setResults([]);
+    setHasSearched(false);
+    setShowManual(false);
+    setMPortion(""); setMCal(""); setMPro("");
   }
 
-  const calNum  = parseFloat(calories) || 0;
-  const proNum  = parseFloat(protein)  || 0;
-  const carbNum = parseFloat(carbs)    || 0;
-  const fatNum  = parseFloat(fat)      || 0;
-  const canAdd  = name.trim() !== "" && calNum > 0;
+  const mCalNum  = parseFloat(mCal) || 0;
+  const canManualAdd = name.trim() !== "" && mCalNum > 0;
 
-  function handleAdd() {
-    if (!canAdd) return;
+  function handleManualAdd() {
+    if (!canManualAdd) return;
     onAdd({
       name:     name.trim(),
-      portion:  portion.trim() || "1 serving",
-      calories: calNum,
-      protein:  proNum,
+      portion:  mPortion.trim() || "1 serving",
+      calories: mCalNum,
+      protein:  parseFloat(mPro) || 0,
       contains: [],
     });
     reset();
@@ -276,20 +277,20 @@ function AddFoodForm({
 
   return (
     <div
-      className="mt-3 space-y-2.5 rounded-xl px-4 py-3"
+      className="mt-3 space-y-3 rounded-xl px-4 py-3"
       style={{ backgroundColor: "var(--sf-surface3)", border: "1px solid var(--sf-border2)" }}
     >
       {/* Name + lookup */}
       <div>
         <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-          Food name <span style={{ color }}>*</span>
+          Food name
         </p>
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="e.g. steak, salmon, rice..."
+            placeholder="e.g. chicken wings, steak, salmon…"
             value={name}
-            onChange={(e) => { setName(e.target.value); setLabel(null); setMiss(false); }}
+            onChange={(e) => { setName(e.target.value); setResults([]); setHasSearched(false); setShowManual(false); }}
             onKeyDown={(e) => e.key === "Enter" && handleLookup()}
             autoFocus
             className="min-w-0 flex-1 rounded-xl px-3 py-2 text-xs outline-none"
@@ -302,7 +303,7 @@ function AddFoodForm({
           <button
             onClick={handleLookup}
             disabled={loading || !name.trim()}
-            className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold"
+            className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition-colors"
             style={{
               backgroundColor: name.trim() ? `${color}18` : "var(--sf-border)",
               color: name.trim() ? color : "var(--sf-text7)",
@@ -311,157 +312,155 @@ function AddFoodForm({
             {loading ? "…" : "Look up"}
           </button>
         </div>
-        {lookupLabel && (
-          <p className="mt-1.5 text-[11px] font-semibold" style={{ color: "#4ade80" }}>
-            ✓ Auto-filled from {lookupLabel}
-          </p>
-        )}
-        {lookupMiss && (
-          <p className="mt-1.5 text-[11px]" style={{ color: "var(--sf-text6)" }}>
-            Not found — enter values manually below.
-          </p>
-        )}
       </div>
 
-      {/* Portion label (optional) */}
-      <div>
-        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-          Portion{" "}
-          <span className="normal-case font-normal tracking-normal" style={{ color: "var(--sf-text7)" }}>
-            (optional)
-          </span>
-        </p>
-        <input
-          type="text"
-          placeholder="e.g. 200g, 1 cup, 1 serving"
-          value={portion}
-          onChange={(e) => setPortion(e.target.value)}
-          className="w-full rounded-xl px-3 py-2 text-xs outline-none"
-          style={{
-            backgroundColor: "var(--sf-surface)",
-            border: "1px solid var(--sf-border2)",
-            color: "var(--sf-text1)",
-          }}
-        />
-      </div>
+      {/* Results list */}
+      {loading && (
+        <p className="text-center text-xs" style={{ color: "var(--sf-text6)" }}>Searching USDA…</p>
+      )}
 
-      {/* Macros — calories required, rest optional */}
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Calories <span style={{ color }}>*</span>
+      {!loading && hasSearched && results.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color }}>
+            Tap a result to add it
           </p>
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="e.g. 250"
-            value={calories}
-            onChange={(e) => setCalories(e.target.value)}
-            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
-            style={{
-              backgroundColor: "var(--sf-surface)",
-              border: calNum > 0 ? `1px solid ${color}66` : "1px solid var(--sf-border2)",
-              color: "var(--sf-text1)",
-            }}
-          />
-        </div>
-        <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Protein (g)
-          </p>
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="e.g. 26"
-            value={protein}
-            onChange={(e) => setProtein(e.target.value)}
-            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
-            style={{
-              backgroundColor: "var(--sf-surface)",
-              border: "1px solid var(--sf-border2)",
-              color: "var(--sf-text1)",
-            }}
-          />
-        </div>
-        <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Carbs (g)
-          </p>
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="0"
-            value={carbs}
-            onChange={(e) => setCarbs(e.target.value)}
-            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
-            style={{
-              backgroundColor: "var(--sf-surface)",
-              border: "1px solid var(--sf-border2)",
-              color: "var(--sf-text1)",
-            }}
-          />
-        </div>
-        <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
-            Fat (g)
-          </p>
-          <input
-            type="number"
-            inputMode="decimal"
-            placeholder="0"
-            value={fat}
-            onChange={(e) => setFat(e.target.value)}
-            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
-            style={{
-              backgroundColor: "var(--sf-surface)",
-              border: "1px solid var(--sf-border2)",
-              color: "var(--sf-text1)",
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Preview */}
-      {calNum > 0 && (
-        <div className="rounded-xl px-3 py-2.5" style={{ backgroundColor: `${color}0d` }}>
-          <p className="text-xs font-bold" style={{ color }}>
-            {portion.trim() || "1 serving"} — {calNum} cal
-          </p>
-          <p className="mt-0.5 text-[11px]" style={{ color: "var(--sf-text3)" }}>
-            P {proNum}g
-            {carbNum > 0 ? ` · C ${carbNum}g` : ""}
-            {fatNum  > 0 ? ` · F ${fatNum}g`  : ""}
-          </p>
+          {results.map((match) => (
+            <button
+              key={match.fdcId}
+              onClick={() => handleSelect(match)}
+              className="w-full rounded-xl px-3 py-2.5 text-left transition-opacity active:opacity-60"
+              style={{
+                backgroundColor: "var(--sf-surface)",
+                border: "1px solid var(--sf-border2)",
+              }}
+            >
+              <p className="text-xs font-bold leading-snug" style={{ color: "var(--sf-text1)" }}>
+                {match.description}
+              </p>
+              <p className="mt-0.5 text-[11px]" style={{ color: "var(--sf-text5)" }}>
+                <span style={{ color: "#00d2ff" }}>{match.cal100} cal</span>
+                {" · P "}
+                <span style={{ color: "#38bdf8" }}>{match.protein100}g</span>
+                {" · C "}
+                <span style={{ color: "#a78bfa" }}>{match.carbs100}g</span>
+                {" · F "}
+                <span style={{ color: "#fb7185" }}>{match.fat100}g</span>
+                <span style={{ color: "var(--sf-text7)" }}> / 100g</span>
+              </p>
+              <span
+                className="mt-1 inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                style={{ backgroundColor: "var(--sf-border)", color: "var(--sf-text7)" }}
+              >
+                {match.dataType}
+              </span>
+            </button>
+          ))}
+          {!showManual && (
+            <button
+              onClick={() => setShowManual(true)}
+              className="pt-0.5 text-[11px]"
+              style={{ color: "var(--sf-text6)" }}
+            >
+              None of these — enter manually
+            </button>
+          )}
         </div>
       )}
 
-      {/* Hint when name is entered but calories missing */}
-      {!canAdd && name.trim() !== "" && calNum === 0 && (
-        <p className="text-[10px]" style={{ color: "var(--sf-text7)" }}>
-          Enter calories to enable adding.
-        </p>
+      {!loading && hasSearched && results.length === 0 && (
+        <div className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "var(--sf-border)" }}>
+          <p className="text-xs font-semibold" style={{ color: "var(--sf-text4)" }}>
+            No USDA results for &ldquo;{name}&rdquo;
+          </p>
+          {!showManual && (
+            <button
+              onClick={() => setShowManual(true)}
+              className="mt-1 text-[11px] font-bold"
+              style={{ color }}
+            >
+              Enter manually →
+            </button>
+          )}
+        </div>
       )}
 
-      <div className="flex gap-2">
-        <button
-          onClick={reset}
-          className="flex-1 rounded-xl py-2 text-xs font-bold"
-          style={{ backgroundColor: "var(--sf-border)", color: "var(--sf-text5)" }}
+      {/* Manual entry fallback */}
+      {showManual && (
+        <div
+          className="space-y-2 rounded-xl px-3 py-3"
+          style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
         >
-          Cancel
-        </button>
-        <button
-          onClick={handleAdd}
-          disabled={!canAdd}
-          className="flex-1 rounded-xl py-2 text-xs font-bold"
-          style={{
-            backgroundColor: canAdd ? `${color}22` : "var(--sf-border)",
-            color: canAdd ? color : "var(--sf-text7)",
-          }}
-        >
-          Add to {tierLabel}
-        </button>
-      </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text6)" }}>
+            Manual entry
+          </p>
+          <input
+            type="text"
+            placeholder="Portion (e.g. 200g, 1 cup)"
+            value={mPortion}
+            onChange={(e) => setMPortion(e.target.value)}
+            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+            style={{
+              backgroundColor: "var(--sf-surface3)",
+              border: "1px solid var(--sf-border2)",
+              color: "var(--sf-text1)",
+            }}
+          />
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text6)" }}>Calories *</p>
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="e.g. 250"
+                value={mCal}
+                onChange={(e) => setMCal(e.target.value)}
+                className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+                style={{
+                  backgroundColor: "var(--sf-surface3)",
+                  border: mCalNum > 0 ? `1px solid ${color}55` : "1px solid var(--sf-border2)",
+                  color: "var(--sf-text1)",
+                }}
+              />
+            </div>
+            <div className="flex-1">
+              <p className="mb-1 text-[10px]" style={{ color: "var(--sf-text6)" }}>Protein (g)</p>
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="e.g. 26"
+                value={mPro}
+                onChange={(e) => setMPro(e.target.value)}
+                className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+                style={{
+                  backgroundColor: "var(--sf-surface3)",
+                  border: "1px solid var(--sf-border2)",
+                  color: "var(--sf-text1)",
+                }}
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleManualAdd}
+            disabled={!canManualAdd}
+            className="w-full rounded-xl py-2 text-xs font-bold"
+            style={{
+              backgroundColor: canManualAdd ? `${color}22` : "var(--sf-border)",
+              color: canManualAdd ? color : "var(--sf-text7)",
+            }}
+          >
+            Add to {tierLabel}
+          </button>
+        </div>
+      )}
+
+      {/* Cancel */}
+      <button
+        onClick={reset}
+        className="w-full rounded-xl py-2 text-xs font-bold"
+        style={{ backgroundColor: "var(--sf-border)", color: "var(--sf-text5)" }}
+      >
+        Cancel
+      </button>
     </div>
   );
 }
@@ -749,7 +748,6 @@ export default function MenuPage() {
 
             <AddFoodForm
               tierLabel={activeCfg.label}
-              calTarget={calTarget}
               color={activeCfg.color}
               onAdd={handleAddCustom}
             />
