@@ -134,6 +134,18 @@ export type USDAMatch = {
   fat100:      number;
 };
 
+// Debug entry collected per-query — returned in the ?q= debug response
+export type USDADebugEntry = {
+  query:         string;
+  dataType:      string;
+  usdaStatus:    number | "timeout" | "error" | "not_called";
+  totalHits:     number;
+  rawCount:      number;
+  parsedCount:   number;
+  filterDropped: number;
+  sampleRaw:     string[];
+};
+
 // Build a ranked list of USDA query strings to try in sequence.
 // Uses the alias (most specific) first, then progressively simpler fallbacks.
 function buildQueryChain(rawName: string): string[] {
@@ -168,13 +180,20 @@ function buildQueryChain(rawName: string): string[] {
   return out.slice(0, 5);
 }
 
-// Execute a single USDA /foods/search request and return parsed matches.
+// Execute a single USDA /foods/search request; populates dbg entry if provided.
 async function fetchOneQuery(
   query:    string,
   apiKey:   string,
   pageSize: number,
   dataType  = "Foundation,SR Legacy",
+  dbg?:     USDADebugEntry[],
 ): Promise<USDAMatch[]> {
+  const entry: USDADebugEntry = {
+    query, dataType,
+    usdaStatus: "not_called", totalHits: 0,
+    rawCount: 0, parsedCount: 0, filterDropped: 0, sampleRaw: [],
+  };
+
   const params = new URLSearchParams({
     query,
     api_key:   apiKey,
@@ -182,16 +201,36 @@ async function fetchOneQuery(
     pageSize:  String(pageSize),
     nutrients: `${NID.calories},${NID.protein},${NID.fat},${NID.carbs}`,
   });
+
   try {
     const res = await fetch(`${USDA_BASE}/foods/search?${params}`, {
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return [];
-    const data = await res.json() as { foods?: USDASearchFood[] };
+    entry.usdaStatus = res.status;
+
+    if (!res.ok) {
+      console.warn(`[usda] HTTP ${res.status} for query="${query}" dataType="${dataType}"`);
+      dbg?.push(entry);
+      return [];
+    }
+
+    const data = await res.json() as { foods?: USDASearchFood[]; totalHits?: number };
+    entry.totalHits = data.totalHits ?? 0;
+    const foods = data.foods ?? [];
+    entry.rawCount  = foods.length;
+    entry.sampleRaw = foods.slice(0, 3).map((f) => f.description);
+
+    console.info(
+      `[usda] query="${query}" status=${res.status} totalHits=${entry.totalHits} raw=${foods.length}`,
+    );
+    if (entry.sampleRaw.length) {
+      console.info(`[usda]   sample: ${entry.sampleRaw.join(" | ")}`);
+    }
+
     const out: USDAMatch[] = [];
-    for (const food of (data.foods ?? [])) {
+    for (const food of foods) {
       const per100g = extractPer100g(food.foodNutrients);
-      if (!per100g) continue;
+      if (!per100g) { entry.filterDropped++; continue; }
       out.push({
         fdcId:       food.fdcId,
         description: food.description,
@@ -202,8 +241,18 @@ async function fetchOneQuery(
         fat100:      Math.round(per100g.fat),
       });
     }
+    entry.parsedCount = out.length;
+    if (entry.filterDropped > 0) {
+      console.info(`[usda]   filterDropped=${entry.filterDropped} (missing calories nutrient)`);
+    }
+
+    dbg?.push(entry);
     return out;
-  } catch {
+  } catch (err) {
+    const isTimeout = String(err).toLowerCase().includes("timeout");
+    entry.usdaStatus = isTimeout ? "timeout" : "error";
+    console.warn(`[usda] fetch error for query="${query}":`, String(err));
+    dbg?.push(entry);
     return [];
   }
 }
@@ -214,33 +263,37 @@ export async function usdaSearch(
   foodName: string,
   apiKey:   string,
   pageSize  = 10,
+  dbg?:     USDADebugEntry[],
 ): Promise<USDAMatch[]> {
   const queries = buildQueryChain(foodName);
   const seen    = new Set<number>();
 
+  console.info(`[usda] search="${foodName}" chain=${JSON.stringify(queries)} key=${apiKey === "DEMO_KEY" ? "DEMO_KEY" : "***"}`);
+
   for (const query of queries) {
-    const batch  = await fetchOneQuery(query, apiKey, pageSize);
+    const batch  = await fetchOneQuery(query, apiKey, pageSize, "Foundation,SR Legacy", dbg);
     const unique = batch.filter((m) => !seen.has(m.fdcId));
     if (unique.length > 0) {
       unique.forEach((m) => seen.add(m.fdcId));
-      console.info(`[usda] "${foodName}" → "${query}" → ${unique.length} results`);
+      console.info(`[usda] "${foodName}" resolved via "${query}" → ${unique.length} matches`);
       return unique.slice(0, pageSize);
     }
-    console.info(`[usda] "${foodName}" → "${query}" → 0, trying next…`);
   }
 
-  // Last resort: widen to include Survey (FNDDS) data
+  // Last resort: widen dataType to include Survey (FNDDS)
   const broadQuery = queries.at(-1) ?? foodName.toLowerCase().trim();
+  console.info(`[usda] "${foodName}" → all chain queries empty, trying broad dataType for "${broadQuery}"`);
   const broad = await fetchOneQuery(
     broadQuery, apiKey, pageSize,
     "Foundation,SR Legacy,Survey (FNDDS)",
+    dbg,
   );
   if (broad.length > 0) {
-    console.info(`[usda] "${foodName}" → broad search → ${broad.length} results`);
+    console.info(`[usda] "${foodName}" resolved via broad search → ${broad.length} matches`);
     return broad.slice(0, pageSize);
   }
 
-  console.warn(`[usda] "${foodName}" → no results after ${queries.length + 1} attempts`);
+  console.warn(`[usda] "${foodName}" → NO results after ${queries.length + 1} attempts`);
   return [];
 }
 
