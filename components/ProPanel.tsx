@@ -83,6 +83,22 @@ function normalizeFoodForm(f?: CustomFood): FoodForm {
   };
 }
 
+// ─── One-time custom item ────────────────────────────────────────────────────
+
+const CUSTOM_ITEM_UNITS = ["g", "oz", "serving", "piece", "slice", "cup", "tbsp", "tsp"] as const;
+type CustomItemUnit = typeof CUSTOM_ITEM_UNITS[number];
+
+type OneTimeItem = {
+  id:       string;
+  name:     string;
+  amount:   number;
+  unit:     CustomItemUnit;
+  calories: number;
+  protein:  number;
+  carbs:    number;
+  fat:      number;
+};
+
 // ─── Sheet overlay ────────────────────────────────────────────────────────────
 
 function SheetOverlay({
@@ -620,6 +636,219 @@ function MyFoodsSheet({
   );
 }
 
+// ─── Custom item sheet ────────────────────────────────────────────────────────
+
+type CustomItemForm = {
+  name:     string;
+  amount:   string;
+  unit:     CustomItemUnit;
+  calories: string;
+  protein:  string;
+  carbs:    string;
+  fat:      string;
+};
+
+const EMPTY_CUSTOM_FORM: CustomItemForm = {
+  name: "", amount: "100", unit: "g", calories: "", protein: "", carbs: "", fat: "",
+};
+
+function CustomItemSheet({
+  initial,
+  onAdd,
+  onClose,
+}: {
+  initial?: OneTimeItem;
+  onAdd: (item: OneTimeItem, saveToFoods: boolean) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState<CustomItemForm>(() =>
+    initial
+      ? {
+          name:     initial.name,
+          amount:   String(initial.amount),
+          unit:     initial.unit,
+          calories: String(initial.calories),
+          protein:  String(initial.protein),
+          carbs:    String(initial.carbs),
+          fat:      String(initial.fat),
+        }
+      : EMPTY_CUSTOM_FORM,
+  );
+  const [saveToFoods, setSaveToFoods] = useState(false);
+
+  const amountNum   = parseFloat(form.amount)   || 0;
+  const caloriesNum = parseFloat(form.calories) || 0;
+  const proteinNum  = parseFloat(form.protein)  || 0;
+  const carbsNum    = parseFloat(form.carbs)    || 0;
+  const fatNum      = parseFloat(form.fat)      || 0;
+  const canAdd      = form.name.trim() !== "" && amountNum > 0;
+
+  function handleAdd() {
+    if (!canAdd) return;
+    const item: OneTimeItem = {
+      id:       initial?.id ?? crypto.randomUUID(),
+      name:     form.name.trim(),
+      amount:   amountNum,
+      unit:     form.unit,
+      calories: caloriesNum,
+      protein:  proteinNum,
+      carbs:    carbsNum,
+      fat:      fatNum,
+    };
+    onAdd(item, !initial && saveToFoods);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0" style={{ backgroundColor: "rgba(0,0,0,0.72)" }} />
+      <div
+        className="relative flex w-full max-w-[430px] flex-col rounded-t-3xl"
+        style={{ backgroundColor: "var(--sf-bg)", maxHeight: "92dvh", overflowX: "hidden" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="flex shrink-0 justify-center pb-2 pt-3">
+          <div className="h-1 w-10 rounded-full" style={{ backgroundColor: "var(--sf-text7)" }} />
+        </div>
+
+        <SheetHeader
+          title={initial ? "Edit Custom Item" : "Quick Custom Item"}
+          onClose={onClose}
+        />
+
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          {/* Name */}
+          <div>
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
+              Food name
+            </p>
+            <input
+              type="text"
+              placeholder="e.g. Homemade burger, My smoothie…"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              autoFocus
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none"
+              style={{
+                backgroundColor: "var(--sf-surface)",
+                border: "1px solid var(--sf-border2)",
+                color: "var(--sf-text1)",
+              }}
+            />
+          </div>
+
+          {/* Amount + Unit */}
+          <div>
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
+              Amount eaten
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="100"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                className="w-24 shrink-0 rounded-xl px-3 py-3 text-center text-sm font-bold outline-none"
+                style={{
+                  backgroundColor: "var(--sf-surface)",
+                  border: "1px solid var(--sf-border2)",
+                  color: "var(--sf-text1)",
+                }}
+              />
+              <select
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value as CustomItemUnit })}
+                className="flex-1 rounded-xl px-3 py-3 text-sm font-bold outline-none"
+                style={{
+                  backgroundColor: "var(--sf-surface)",
+                  border: "1px solid var(--sf-border2)",
+                  color: "var(--sf-text1)",
+                }}
+              >
+                {CUSTOM_ITEM_UNITS.map((u) => (
+                  <option key={u} value={u} style={{ backgroundColor: "var(--sf-surface)" }}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Macros 2×2 */}
+          <div>
+            <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
+              Nutrition
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <MacroField label="Calories" unit="kcal" color="#00d2ff" value={form.calories} onChange={(v) => setForm({ ...form, calories: v })} />
+              <MacroField label="Protein"  unit="g"    color="#38bdf8" value={form.protein}  onChange={(v) => setForm({ ...form, protein:  v })} />
+              <MacroField label="Carbs"    unit="g"    color="#a78bfa" value={form.carbs}    onChange={(v) => setForm({ ...form, carbs:    v })} />
+              <MacroField label="Fat"      unit="g"    color="#fb7185" value={form.fat}      onChange={(v) => setForm({ ...form, fat:      v })} />
+            </div>
+          </div>
+
+          {/* Save to My Foods — only on new items */}
+          {!initial && (
+            <button
+              onClick={() => setSaveToFoods((v) => !v)}
+              className="flex w-full items-center gap-3 text-left"
+            >
+              <div
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md"
+                style={{
+                  backgroundColor: saveToFoods ? "#00d2ff" : "transparent",
+                  border: saveToFoods ? "none" : "2px solid var(--sf-border2)",
+                }}
+              >
+                {saveToFoods && (
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#0a0a0a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="2 6 5 9 10 3" />
+                  </svg>
+                )}
+              </div>
+              <span className="text-sm" style={{ color: "var(--sf-text3)" }}>
+                Save to My Foods for next time
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="shrink-0 px-5 py-4" style={{ borderTop: "1px solid var(--sf-border)" }}>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 rounded-2xl py-3.5 text-sm font-bold"
+              style={{
+                backgroundColor: "var(--sf-surface)",
+                border: "1px solid var(--sf-border2)",
+                color: "var(--sf-text5)",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={!canAdd}
+              className="flex-[2] rounded-2xl py-3.5 text-sm font-black transition-all active:scale-[0.98]"
+              style={{
+                backgroundColor: canAdd ? "#00d2ff" : "var(--sf-border)",
+                color:           canAdd ? "#0a0a0a" : "var(--sf-text7)",
+              }}
+            >
+              {initial ? "Update Item" : "Add to Meal"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Meal builder sheet ───────────────────────────────────────────────────────
 
 type Tab     = "favorites" | "builtin" | "myfoods" | "all";
@@ -879,10 +1108,12 @@ function MealBuilderSheet({
   foods,
   onClose,
   onGoToMyFoods,
+  onSaveFood,
 }: {
   foods: CustomFood[];
   onClose: () => void;
   onGoToMyFoods: () => void;
+  onSaveFood: (food: CustomFood) => void;
 }) {
   const { dispatch } = useApp();
 
@@ -896,8 +1127,11 @@ function MealBuilderSheet({
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
   const [amountMap,   setAmountMap]   = useState<Record<string, string>>({});
   const [unitMap,     setUnitMap]     = useState<Record<string, LogUnit>>({});
-  const [pendingFood, setPendingFood] = useState<AnyFood | null>(null);
-  const [isEditing,   setIsEditing]   = useState(false);
+  const [pendingFood,    setPendingFood]    = useState<AnyFood | null>(null);
+  const [isEditing,      setIsEditing]      = useState(false);
+  const [oneTimeItems,   setOneTimeItems]   = useState<OneTimeItem[]>([]);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [editingCustom,  setEditingCustom]  = useState<OneTimeItem | null>(null);
 
   const sl = search.toLowerCase().trim();
   function matches(f: AnyFood) {
@@ -934,6 +1168,34 @@ function MealBuilderSheet({
     setUnitMap((m)   => { const c = { ...m }; delete c[foodId]; return c; });
   }
 
+  function handleCustomAdd(item: OneTimeItem, saveToFoods: boolean) {
+    if (editingCustom) {
+      setOneTimeItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+    } else {
+      setOneTimeItems((prev) => [...prev, item]);
+    }
+    if (saveToFoods) {
+      const food: CustomFood = {
+        id:            item.id,
+        name:          item.name,
+        servingAmount: item.amount,
+        servingUnit:   item.unit as ServingUnit,
+        calories:      item.calories,
+        protein:       item.protein,
+        carbs:         item.carbs,
+        fat:           item.fat,
+        createdAt:     new Date().toISOString(),
+      };
+      onSaveFood(food);
+    }
+    setShowCustomForm(false);
+    setEditingCustom(null);
+  }
+
+  function removeOneTimeItem(id: string) {
+    setOneTimeItems((prev) => prev.filter((i) => i.id !== id));
+  }
+
   function toggleBIFav(id: string) {
     const next = biiFavSet.has(id)
       ? builtinFavIds.filter((x) => x !== id)
@@ -964,9 +1226,26 @@ function MealBuilderSheet({
     { calories: 0, protein: 0, carbs: 0, fat: 0 },
   );
 
+  const oneTimeTotals = oneTimeItems.reduce(
+    (acc, item) => ({
+      calories: acc.calories + item.calories,
+      protein:  acc.protein  + item.protein,
+      carbs:    acc.carbs    + item.carbs,
+      fat:      acc.fat      + item.fat,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  );
+
+  const grandTotal = {
+    calories: totals.calories + oneTimeTotals.calories,
+    protein:  totals.protein  + oneTimeTotals.protein,
+    carbs:    totals.carbs    + oneTimeTotals.carbs,
+    fat:      totals.fat      + oneTimeTotals.fat,
+  };
+
   function handleLog() {
-    if (selectedFoods.length === 0) return;
-    const items: FoodItem[] = selectedFoods.map((food) => {
+    if (selectedFoods.length === 0 && oneTimeItems.length === 0) return;
+    const regularItems: FoodItem[] = selectedFoods.map((food) => {
       const amount   = parseFloat(amountMap[food.id] || "0") || 0;
       const unit     = unitMap[food.id] ?? defaultLogUnit(asC(food));
       const servings = toServings(asC(food), amount, unit);
@@ -985,16 +1264,27 @@ function MealBuilderSheet({
         source:   isBI(food) ? ("built_in" as const) : ("manual" as const),
       };
     });
+    const customItems: FoodItem[] = oneTimeItems.map((item) => ({
+      name:     item.name,
+      amount:   `${item.amount} ${item.unit}`,
+      grams:    item.unit === "g" ? item.amount : null,
+      calories: item.calories,
+      protein:  item.protein,
+      carbs:    item.carbs,
+      fat:      item.fat,
+      source:   "manual" as const,
+    }));
+    const items = [...regularItems, ...customItems];
     dispatch({
       type: "ADD_ENTRY",
       payload: {
         id:       crypto.randomUUID(),
         text:     items.map((i) => `${i.name} ${i.amount}`).join(", "),
         time:     new Date().toISOString(),
-        calories: totals.calories,
-        protein:  totals.protein,
-        carbs:    totals.carbs,
-        fat:      totals.fat,
+        calories: grandTotal.calories,
+        protein:  grandTotal.protein,
+        carbs:    grandTotal.carbs,
+        fat:      grandTotal.fat,
         items,
       },
     });
@@ -1169,7 +1459,7 @@ function MealBuilderSheet({
     { id: "all",       label: "All"      },
   ];
 
-  const canLog = selectedFoods.length > 0;
+  const canLog = selectedFoods.length > 0 || oneTimeItems.length > 0;
 
   return (
     <>
@@ -1222,10 +1512,24 @@ function MealBuilderSheet({
       {/* Scrollable food list */}
       <div className="flex-1 overflow-y-auto">
         {renderList()}
+        {/* Custom item button */}
+        <div className="px-5 py-4">
+          <button
+            onClick={() => { setEditingCustom(null); setShowCustomForm(true); }}
+            className="w-full rounded-2xl py-3 text-sm font-bold transition-all active:scale-95"
+            style={{
+              backgroundColor: "rgba(168,139,250,0.06)",
+              border: "1.5px dashed rgba(168,139,250,0.35)",
+              color: "#a78bfa",
+            }}
+          >
+            + Custom item
+          </button>
+        </div>
       </div>
 
       {/* Your Meal — sticky section, always above footer when foods are selected */}
-      {selectedFoods.length > 0 && (
+      {(selectedFoods.length > 0 || oneTimeItems.length > 0) && (
         <div
           className="shrink-0 overflow-y-auto"
           style={{
@@ -1242,10 +1546,10 @@ function MealBuilderSheet({
               Your Meal
             </p>
             <p className="text-xs font-black" style={{ color: "var(--sf-text1)" }}>
-              {totals.calories}
+              {grandTotal.calories}
               <span className="ml-0.5 text-[10px] font-medium" style={{ color: "var(--sf-text6)" }}>cal</span>
               {"  "}
-              <span className="text-[10px] font-medium" style={{ color: "#38bdf8" }}>P {totals.protein}g</span>
+              <span className="text-[10px] font-medium" style={{ color: "#38bdf8" }}>P {grandTotal.protein}g</span>
             </p>
           </div>
 
@@ -1302,6 +1606,55 @@ function MealBuilderSheet({
               </div>
             );
           })}
+
+          {/* One-time custom item rows */}
+          {oneTimeItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center gap-2 px-4 py-2.5"
+              style={{ borderBottom: "1px solid var(--sf-border)" }}
+            >
+              <button
+                className="flex-1 min-w-0 text-left"
+                onClick={() => { setEditingCustom(item); setShowCustomForm(true); }}
+              >
+                <p className="flex items-center gap-1.5 truncate text-sm font-bold" style={{ color: "var(--sf-text1)" }}>
+                  {item.name}
+                  <span
+                    className="shrink-0 rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                    style={{ color: "#a78bfa", backgroundColor: "rgba(168,139,250,0.1)" }}
+                  >
+                    custom
+                  </span>
+                </p>
+                <p className="text-[11px]" style={{ color: "var(--sf-text5)" }}>
+                  <span style={{ color: "#00d2ff" }}>{item.amount} {item.unit}</span>
+                  {" · "}{item.calories} cal · P {item.protein}g
+                </p>
+              </button>
+
+              <button
+                onClick={() => { setEditingCustom(item); setShowCustomForm(true); }}
+                className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl"
+                style={{ backgroundColor: "rgba(168,139,250,0.08)", color: "#a78bfa" }}
+                aria-label="Edit custom item"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+
+              <button
+                onClick={() => removeOneTimeItem(item.id)}
+                className="shrink-0 flex h-7 w-7 items-center justify-center rounded-xl text-base font-black leading-none"
+                style={{ backgroundColor: "rgba(255,80,80,0.08)", color: "#ff6060" }}
+                aria-label="Remove custom item"
+              >
+                ×
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1316,7 +1669,7 @@ function MealBuilderSheet({
             color:           canLog ? "#0a0a0a" : "var(--sf-text7)",
           }}
         >
-          {canLog ? `Add ${totals.calories} cal to Log` : "Select foods above"}
+          {canLog ? `Add ${grandTotal.calories} cal to Log` : "Select foods above"}
         </button>
       </div>
     </SheetOverlay>
@@ -1328,6 +1681,13 @@ function MealBuilderSheet({
         isEditing={isEditing}
         onAdd={handleQuantityAdd}
         onClose={() => { setPendingFood(null); setIsEditing(false); }}
+      />
+    )}
+    {showCustomForm && (
+      <CustomItemSheet
+        initial={editingCustom ?? undefined}
+        onAdd={handleCustomAdd}
+        onClose={() => { setShowCustomForm(false); setEditingCustom(null); }}
       />
     )}
     </>
@@ -1405,6 +1765,7 @@ export default function ProPanel() {
           foods={proFoods}
           onClose={() => setOpenSheet(null)}
           onGoToMyFoods={() => setOpenSheet("foods")}
+          onSaveFood={(food) => updateFoods([...proFoods, food])}
         />
       )}
     </>
