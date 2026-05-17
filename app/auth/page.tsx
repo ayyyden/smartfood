@@ -56,7 +56,7 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center px-5 py-10"
-      style={{ backgroundColor: "#0a0a0a" }}
+      style={{ backgroundColor: "var(--sf-bg)" }}
     >
       <div className="w-full max-w-[380px] space-y-8">
         <div className="flex flex-col items-center gap-4">
@@ -76,10 +76,10 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
           </div>
 
           <div className="text-center space-y-1">
-            <p className="text-[24px] font-black tracking-tight" style={{ color: "#ffffff" }}>
+            <p className="text-[24px] font-black tracking-tight" style={{ color: "var(--sf-text1)" }}>
               Check your email
             </p>
-            <p className="text-sm" style={{ color: "#666666" }}>
+            <p className="text-sm" style={{ color: "var(--sf-text4)" }}>
               We sent a confirmation link to
             </p>
             <p className="text-sm font-bold" style={{ color: "#00d2ff" }}>
@@ -91,12 +91,12 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
         {/* Steps */}
         <div
           className="rounded-2xl p-5 space-y-3"
-          style={{ backgroundColor: "#141414", border: "1px solid #252525" }}
+          style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
         >
           {[
             "Open the email from Smartfood",
             'Click "Confirm your email"',
-            "You\'ll be taken directly to account setup",
+            "You'll be taken directly to account setup",
           ].map((step, i) => (
             <div key={i} className="flex items-start gap-3">
               <span
@@ -105,19 +105,19 @@ function SignupSentScreen({ email, onBack }: { email: string; onBack: () => void
               >
                 {i + 1}
               </span>
-              <p className="text-sm leading-snug" style={{ color: "#aaaaaa" }}>
+              <p className="text-sm leading-snug" style={{ color: "var(--sf-text3)" }}>
                 {step}
               </p>
             </div>
           ))}
         </div>
 
-        <p className="text-center text-xs" style={{ color: "#444444" }}>
+        <p className="text-center text-xs" style={{ color: "var(--sf-text5)" }}>
           Didn&apos;t receive it? Check your spam folder, or{" "}
           <button
             onClick={onBack}
             className="underline"
-            style={{ color: "#555555" }}
+            style={{ color: "var(--sf-text4)" }}
           >
             go back and try again
           </button>
@@ -229,19 +229,19 @@ export default function AuthPage() {
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
-    backgroundColor: "#1c1c1c",
-    border: "1px solid #252525",
+    backgroundColor: "var(--sf-input)",
+    border: "1px solid var(--sf-border2)",
     borderRadius: "14px",
     padding: "14px 16px",
     fontSize: "15px",
-    color: "#ffffff",
+    color: "var(--sf-text1)",
     outline: "none",
   };
 
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center px-5 py-10"
-      style={{ backgroundColor: "#0a0a0a" }}
+      style={{ backgroundColor: "var(--sf-bg)" }}
     >
       <div className="w-full max-w-[380px] space-y-8">
 
@@ -249,10 +249,10 @@ export default function AuthPage() {
         <div className="flex flex-col items-center gap-4">
           <DumbbellLogo size={52} glow={0.5} />
           <div className="text-center">
-            <p className="text-[28px] font-black tracking-tight" style={{ color: "#ffffff" }}>
+            <p className="text-[28px] font-black tracking-tight" style={{ color: "var(--sf-text1)" }}>
               Smartfood
             </p>
-            <p className="mt-1 text-sm" style={{ color: "#888888" }}>
+            <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>
               {mode === "login" ? "Sign in to continue" : "Create your account"}
             </p>
           </div>
@@ -264,9 +264,9 @@ export default function AuthPage() {
             className="rounded-xl px-4 py-3 text-xs space-y-1 font-mono"
             style={{ backgroundColor: "#0d1a1f", border: "1px solid #1a3a44", color: "#4a9eb5" }}
           >
-            <div style={{ color: "#888888", marginBottom: 4 }}>⚙ Supabase debug (non-production only)</div>
+            <div style={{ color: "var(--sf-text5)", marginBottom: 4 }}>⚙ Supabase debug (non-production only)</div>
             <div>URL set: <span style={{ color: SUPABASE_URL ? "#00d2ff" : "#ff6060" }}>{SUPABASE_URL ? "yes" : "NO"}</span></div>
-            {SUPABASE_URL && <div>URL host: <span style={{ color: "#ffffff" }}>{getUrlHost(SUPABASE_URL)}</span></div>}
+            {SUPABASE_URL && <div>URL host: <span style={{ color: "var(--sf-text2)" }}>{getUrlHost(SUPABASE_URL)}</span></div>}
             <div>Anon key set: <span style={{ color: SUPABASE_KEY ? "#00d2ff" : "#ff6060" }}>{SUPABASE_KEY ? "yes" : "NO"}</span></div>
           </div>
         )}
@@ -274,7 +274,7 @@ export default function AuthPage() {
         {/* Mode toggle */}
         <div
           className="flex overflow-hidden rounded-2xl p-1"
-          style={{ backgroundColor: "#141414", border: "1px solid #252525" }}
+          style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
         >
           {(["login", "signup"] as Mode[]).map((m) => (
             <button
@@ -284,8 +284,8 @@ export default function AuthPage() {
               className="flex-1 rounded-xl py-2.5 text-sm font-bold transition-all"
               style={
                 mode === m
-                  ? { backgroundColor: "#1e1e1e", color: "#ffffff" }
-                  : { backgroundColor: "transparent", color: "#444444" }
+                  ? { backgroundColor: "var(--sf-input)", color: "var(--sf-text1)" }
+                  : { backgroundColor: "transparent", color: "var(--sf-text5)" }
               }
             >
               {m === "login" ? "Log in" : "Sign up"}
@@ -304,7 +304,7 @@ export default function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               style={inputStyle}
               onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
             />
           </div>
 
@@ -317,7 +317,7 @@ export default function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
               style={inputStyle}
               onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
             />
           </div>
 
@@ -331,7 +331,7 @@ export default function AuthPage() {
                 onChange={(e) => setConfirm(e.target.value)}
                 style={inputStyle}
                 onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
               />
             </div>
           )}
@@ -359,7 +359,7 @@ export default function AuthPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs" style={{ color: "#666666" }}>
+        <p className="text-center text-xs" style={{ color: "var(--sf-text5)" }}>
           Your data is private and encrypted.
         </p>
       </div>

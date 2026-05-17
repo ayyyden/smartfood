@@ -116,17 +116,17 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
     >
       <div
         className="w-full max-w-[430px] rounded-t-3xl px-6 pt-8 pb-10"
-        style={{ backgroundColor: "#0f0f0f", border: "1px solid #252525", borderBottom: "none" }}
+        style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)", borderBottom: "none" }}
       >
         {/* Header row */}
         <div className="flex items-center justify-between mb-8">
-          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#444444" }}>
+          <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>
             Quick tutorial
           </span>
           <button
             onClick={onDone}
             className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all active:scale-95"
-            style={{ color: "#555555", backgroundColor: "#1c1c1c" }}
+            style={{ color: "var(--sf-text3)", backgroundColor: "var(--sf-input)" }}
           >
             Skip
           </button>
@@ -142,10 +142,10 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
 
         {/* Content */}
         <div className="mb-8 space-y-2">
-          <p className="text-[22px] font-black leading-tight" style={{ color: "#ffffff" }}>
+          <p className="text-[22px] font-black leading-tight" style={{ color: "var(--sf-text1)" }}>
             {slide.title}
           </p>
-          <p className="text-sm leading-relaxed" style={{ color: "#888888" }}>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--sf-text3)" }}>
             {slide.body}
           </p>
         </div>
@@ -160,7 +160,7 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
                 style={{
                   width:           i === index ? 20 : 6,
                   height:          6,
-                  backgroundColor: i === index ? slide.accentColor : "#333333",
+                  backgroundColor: i === index ? slide.accentColor : "var(--sf-border2)",
                 }}
               />
             ))}
@@ -171,7 +171,7 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
               <button
                 onClick={() => setIndex((i) => i - 1)}
                 className="flex h-11 w-11 items-center justify-center rounded-2xl transition-all active:scale-95"
-                style={{ backgroundColor: "#1c1c1c", color: "#666666" }}
+                style={{ backgroundColor: "var(--sf-input)", color: "var(--sf-text4)" }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6" />

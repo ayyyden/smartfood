@@ -39,7 +39,7 @@ function PillGroup({
             className="rounded-xl px-4 py-2.5 text-sm font-semibold transition-all active:scale-95"
             style={active
               ? { backgroundColor: "rgba(0,210,255,0.12)", color: "#00d2ff", border: "1px solid rgba(0,210,255,0.35)" }
-              : { backgroundColor: "#1c1c1c", color: "#555555", border: "1px solid #252525" }}
+              : { backgroundColor: "var(--sf-input)", color: "var(--sf-text4)", border: "1px solid var(--sf-border2)" }}
           >
             {o.label}
           </button>
@@ -62,7 +62,7 @@ function MultiPill({
             className="rounded-xl px-3.5 py-2 text-sm font-semibold transition-all active:scale-95"
             style={active
               ? { backgroundColor: "rgba(0,210,255,0.12)", color: "#00d2ff", border: "1px solid rgba(0,210,255,0.35)" }
-              : { backgroundColor: "#1c1c1c", color: "#555555", border: "1px solid #252525" }}
+              : { backgroundColor: "var(--sf-input)", color: "var(--sf-text4)", border: "1px solid var(--sf-border2)" }}
           >
             {o.label}
           </button>
@@ -74,12 +74,12 @@ function MultiPill({
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  backgroundColor: "#1c1c1c",
-  border: "1px solid #252525",
+  backgroundColor: "var(--sf-input)",
+  border: "1px solid var(--sf-border2)",
   borderRadius: "14px",
   padding: "14px 16px",
   fontSize: "15px",
-  color: "#ffffff",
+  color: "var(--sf-text1)",
   outline: "none",
 };
 
@@ -96,15 +96,15 @@ function NumInput({ value, onChange, placeholder, unit }: {
         onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
         style={{ ...inputStyle, flex: 1 }}
         onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-        onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
       />
-      {unit && <span className="text-sm w-8 shrink-0" style={{ color: "#888888" }}>{unit}</span>}
+      {unit && <span className="text-sm w-8 shrink-0" style={{ color: "var(--sf-text4)" }}>{unit}</span>}
     </div>
   );
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "#888888" }}>{children}</p>;
+  return <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>{children}</p>;
 }
 
 const GENDER_OPTS   = [{ value: "male", label: "Male" }, { value: "female", label: "Female" }];
@@ -133,7 +133,6 @@ const DIET_OPTS = [
 ];
 
 // ─── Error helper ─────────────────────────────────────────────────────────────
-// Supabase errors are plain objects, not Error instances — String(err) = "[object Object]"
 
 function getErrorMessage(err: unknown): string {
   if (!err) return "Unknown error";
@@ -222,23 +221,23 @@ export default function OnboardingPage() {
   const pct = (step / TOTAL_STEPS) * 100;
 
   return (
-    <div className="flex min-h-screen flex-col" style={{ backgroundColor: "#0a0a0a" }}>
+    <div className="flex min-h-screen flex-col" style={{ backgroundColor: "var(--sf-bg)" }}>
 
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-10 pb-6">
         <DumbbellLogo size={28} glow={0.35} />
-        <p className="text-lg font-black" style={{ color: "#ffffff" }}>Smartfood</p>
+        <p className="text-lg font-black" style={{ color: "var(--sf-text1)" }}>Smartfood</p>
       </div>
 
       {/* Progress bar */}
       <div className="px-5">
-        <div className="overflow-hidden rounded-full" style={{ height: "3px", backgroundColor: "#1a1a1a" }}>
+        <div className="overflow-hidden rounded-full" style={{ height: "3px", backgroundColor: "var(--sf-border)" }}>
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${pct}%`, backgroundColor: "#00d2ff", boxShadow: "0 0 8px rgba(0,210,255,0.5)" }}
           />
         </div>
-        <p className="mt-2 text-xs" style={{ color: "#888888" }}>Step {step} of {TOTAL_STEPS}</p>
+        <p className="mt-2 text-xs" style={{ color: "var(--sf-text5)" }}>Step {step} of {TOTAL_STEPS}</p>
       </div>
 
       {/* Content */}
@@ -248,8 +247,8 @@ export default function OnboardingPage() {
         {step === 1 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Tell us about yourself</p>
-              <p className="mt-1 text-sm" style={{ color: "#888888" }}>We use this to personalize your goals</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Tell us about yourself</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>We use this to personalize your goals</p>
             </div>
 
             <div className="space-y-4">
@@ -260,11 +259,11 @@ export default function OnboardingPage() {
                   value={profile.dateOfBirth}
                   max={new Date().toISOString().split("T")[0]}
                   onChange={(e) => update({ dateOfBirth: e.target.value })}
-                  style={{ ...inputStyle, colorScheme: "dark" }}
+                  style={{ ...inputStyle }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
                 />
-                {age && <p className="mt-1.5 text-xs" style={{ color: "#888888" }}>Age: <span style={{ color: "#00d2ff" }}>{age}</span></p>}
+                {age && <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>Age: <span style={{ color: "#00d2ff" }}>{age}</span></p>}
               </div>
 
               <div>
@@ -279,23 +278,23 @@ export default function OnboardingPage() {
         {step === 2 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Your body</p>
-              <p className="mt-1 text-sm" style={{ color: "#888888" }}>We'll calculate your calorie needs</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Your body</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>We'll calculate your calorie needs</p>
             </div>
 
             <div className="space-y-4">
               {/* Units */}
               <div>
                 <Label>Units</Label>
-                <div className="flex overflow-hidden rounded-2xl" style={{ border: "1px solid #252525" }}>
+                <div className="flex overflow-hidden rounded-2xl" style={{ border: "1px solid var(--sf-border2)" }}>
                   <button type="button" onClick={() => update({ unitSystem: "metric" })}
                     className="flex-1 py-3 text-sm font-bold transition-colors"
-                    style={!isImperial ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" } : { backgroundColor: "#1c1c1c", color: "#555555" }}>
+                    style={!isImperial ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" } : { backgroundColor: "var(--sf-input)", color: "var(--sf-text4)" }}>
                     Metric (kg/cm)
                   </button>
                   <button type="button" onClick={() => update({ unitSystem: "imperial" })}
                     className="flex-1 py-3 text-sm font-bold transition-colors"
-                    style={isImperial ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" } : { backgroundColor: "#1c1c1c", color: "#555555" }}>
+                    style={isImperial ? { backgroundColor: "rgba(0,210,255,0.1)", color: "#00d2ff" } : { backgroundColor: "var(--sf-input)", color: "var(--sf-text4)" }}>
                     Imperial (lb/in)
                   </button>
                 </div>
@@ -329,8 +328,8 @@ export default function OnboardingPage() {
         {step === 3 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Your goal</p>
-              <p className="mt-1 text-sm" style={{ color: "#888888" }}>What are you working toward?</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Your goal</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>What are you working toward?</p>
             </div>
 
             <div className="space-y-4">
@@ -344,7 +343,7 @@ export default function OnboardingPage() {
                 <PillGroup options={ACTIVITY_OPTS} value={profile.activityLevel}
                   onChange={(v) => update({ activityLevel: v as ActivityLevel })} />
                 {profile.activityLevel && (
-                  <p className="mt-2 text-xs" style={{ color: "#888888" }}>
+                  <p className="mt-2 text-xs" style={{ color: "var(--sf-text5)" }}>
                     {ACTIVITY_DESC[profile.activityLevel]}
                   </p>
                 )}
@@ -357,28 +356,28 @@ export default function OnboardingPage() {
         {step === 4 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Your targets</p>
-              <p className="mt-1 text-sm" style={{ color: "#888888" }}>Based on your stats. You can override anytime.</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Your targets</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>Based on your stats. You can override anytime.</p>
             </div>
 
             <div className="space-y-4">
               {/* Recommendation */}
-              <div className="rounded-2xl px-5 py-4" style={{ backgroundColor: "#141414", border: "1px solid #252525" }}>
+              <div className="rounded-2xl px-5 py-4" style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}>
                 {rec ? (
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#888888" }}>Recommended</p>
+                      <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--sf-text5)" }}>Recommended</p>
                       <p className="mt-0.5 text-2xl font-black" style={{ color: "#00d2ff" }}>
                         {rec.calories.toLocaleString()}
-                        <span className="ml-1 text-sm font-normal" style={{ color: "#888888" }}>cal/day</span>
+                        <span className="ml-1 text-sm font-normal" style={{ color: "var(--sf-text4)" }}>cal/day</span>
                       </p>
                     </div>
-                    <p className="text-right text-xs leading-snug" style={{ color: "#888888" }}>
+                    <p className="text-right text-xs leading-snug" style={{ color: "var(--sf-text5)" }}>
                       Based on your<br />stats &amp; goal
                     </p>
                   </div>
                 ) : (
-                  <p className="text-sm" style={{ color: "#888888" }}>
+                  <p className="text-sm" style={{ color: "var(--sf-text4)" }}>
                     Complete your stats in steps 1–3 to see a recommendation.
                   </p>
                 )}
@@ -402,7 +401,7 @@ export default function OnboardingPage() {
                     style={{ ...inputStyle, flex: 1, color: "#00d2ff", fontWeight: 800 }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
                   />
-                  <span className="text-sm" style={{ color: "#888888" }}>cal</span>
+                  <span className="text-sm" style={{ color: "var(--sf-text4)" }}>cal</span>
                 </div>
               </div>
 
@@ -421,9 +420,9 @@ export default function OnboardingPage() {
                     style={{ ...inputStyle, flex: 1 }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
                   />
-                  <span className="text-sm" style={{ color: "#888888" }}>g</span>
+                  <span className="text-sm" style={{ color: "var(--sf-text4)" }}>g</span>
                 </div>
-                {rec && <p className="mt-1.5 text-xs" style={{ color: "#888888" }}>Recommended: {rec.protein}g</p>}
+                {rec && <p className="mt-1.5 text-xs" style={{ color: "var(--sf-text5)" }}>Recommended: {rec.protein}g</p>}
               </div>
 
               {/* Weight rate estimate */}
@@ -442,7 +441,7 @@ export default function OnboardingPage() {
                 return (
                   <div
                     className="rounded-2xl px-4 py-3.5 space-y-1"
-                    style={{ backgroundColor: "#141414", border: "1px solid #252525" }}
+                    style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-border2)" }}
                   >
                     {isLoss ? (
                       <p className="text-sm" style={{ color: "#4ade80" }}>
@@ -455,11 +454,11 @@ export default function OnboardingPage() {
                         <strong>{dispChange.toFixed(1)} {unit}/week</strong>.
                       </p>
                     ) : (
-                      <p className="text-sm" style={{ color: "#888888" }}>
+                      <p className="text-sm" style={{ color: "var(--sf-text4)" }}>
                         At {profile.calorieGoal.toLocaleString()} cal/day, you&apos;re approximately maintaining your weight.
                       </p>
                     )}
-                    <p className="text-xs" style={{ color: "#888888" }}>
+                    <p className="text-xs" style={{ color: "var(--sf-text5)" }}>
                       Estimate only — actual results vary by individual.
                     </p>
                   </div>
@@ -473,8 +472,8 @@ export default function OnboardingPage() {
         {step === 5 && (
           <>
             <div>
-              <p className="text-[24px] font-black" style={{ color: "#ffffff" }}>Food preferences</p>
-              <p className="mt-1 text-sm" style={{ color: "#888888" }}>Helps the AI make better suggestions</p>
+              <p className="text-[24px] font-black" style={{ color: "var(--sf-text1)" }}>Food preferences</p>
+              <p className="mt-1 text-sm" style={{ color: "var(--sf-text4)" }}>Helps the AI make better suggestions</p>
             </div>
 
             <div className="space-y-4">
@@ -493,7 +492,7 @@ export default function OnboardingPage() {
                   onChange={(e) => setProfile((p) => ({ ...p, foodPreferences: e.target.value }))}
                   style={{ ...inputStyle, resize: "none", lineHeight: "1.5" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
                 />
               </div>
 
@@ -506,7 +505,7 @@ export default function OnboardingPage() {
                   onChange={(e) => setProfile((p) => ({ ...p, dislikedFoods: e.target.value }))}
                   style={{ ...inputStyle, resize: "none", lineHeight: "1.5" }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,210,255,0.4)")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "#252525")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--sf-border2)")}
                 />
               </div>
             </div>
@@ -550,7 +549,7 @@ export default function OnboardingPage() {
             type="button"
             onClick={() => setStep((s) => s - 1)}
             className="w-full rounded-2xl py-3 text-sm font-semibold"
-            style={{ color: "#888888" }}
+            style={{ color: "var(--sf-text4)" }}
           >
             Back
           </button>
@@ -560,7 +559,7 @@ export default function OnboardingPage() {
             type="button"
             onClick={() => setStep((s) => s + 1)}
             className="w-full text-xs"
-            style={{ color: "#333333" }}
+            style={{ color: "var(--sf-text6)" }}
           >
             Skip for now
           </button>

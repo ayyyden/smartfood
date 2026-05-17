@@ -5,11 +5,11 @@ export default function TopNav() {
   return (
     <header
       className="flex h-14 shrink-0 items-center justify-between px-4"
-      style={{ backgroundColor: "#0a0a0a", borderBottom: "1px solid #1a1a1a" }}
+      style={{ backgroundColor: "var(--sf-bg)", borderBottom: "1px solid var(--sf-border)" }}
     >
       <div className="flex items-center gap-2">
         <DumbbellLogo size={28} />
-        <span className="text-[17px] font-black tracking-tight" style={{ color: "#ffffff" }}>
+        <span className="text-[17px] font-black tracking-tight" style={{ color: "var(--sf-text1)" }}>
           Smartfood
         </span>
       </div>
@@ -20,7 +20,7 @@ export default function TopNav() {
           href="/settings"
           aria-label="Settings"
           className="flex h-9 w-9 items-center justify-center rounded-full transition-all active:scale-95"
-          style={{ backgroundColor: "#1e1e1e", color: "#555555" }}
+          style={{ backgroundColor: "var(--sf-pill)", color: "var(--sf-text4)" }}
         >
           <svg
             width="16"
@@ -42,7 +42,7 @@ export default function TopNav() {
           href="/profile"
           aria-label="Profile"
           className="flex h-9 w-9 items-center justify-center rounded-full transition-all active:scale-95"
-          style={{ backgroundColor: "#1e1e1e", color: "#555555" }}
+          style={{ backgroundColor: "var(--sf-pill)", color: "var(--sf-text4)" }}
         >
           <svg
             width="17"

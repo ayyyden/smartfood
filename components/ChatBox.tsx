@@ -150,7 +150,7 @@ export default function ChatBox() {
             className="flex flex-1 items-center gap-2.5 rounded-2xl px-4 py-2.5"
             style={{ backgroundColor: "var(--sf-surface)", border: "1px solid var(--sf-pill)" }}
           >
-            <span className="text-sm" style={{ color: "var(--sf-text7)" }}>
+            <span className="text-sm" style={{ color: "var(--sf-placeholder)" }}>
               What did you eat?
             </span>
           </div>
