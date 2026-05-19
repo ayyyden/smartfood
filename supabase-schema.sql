@@ -33,6 +33,7 @@ create table public.food_entries (
   original_text text,
   logged_at     timestamptz default now(),
   date          text not null,
+  date_key      text,              -- local browser date YYYY-MM-DD, used for per-day filtering
   calories      integer,
   protein       numeric,
   carbs         numeric,
@@ -41,6 +42,8 @@ create table public.food_entries (
   source        text,
   created_at    timestamptz default now()
 );
+
+create index food_entries_user_date_key_idx on public.food_entries (user_id, date_key);
 
 create table public.weight_logs (
   id         uuid primary key default gen_random_uuid(),

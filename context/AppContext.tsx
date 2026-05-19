@@ -160,11 +160,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
 
-  // Persist to localStorage as cache (after hydration, when no user)
+  // Always persist today's entries to localStorage as an offline cache.
+  // This lets the Supabase-failure catch branch actually find data on re-open.
   useEffect(() => {
-    if (!hydrated || user) return;
+    if (!hydrated) return;
     saveEntriesLocal(getTodayKey(), state.entries);
-  }, [hydrated, user, state.entries]);
+  }, [hydrated, state.entries]);
 
   // Wrapped dispatch that also calls Supabase for data mutations
   const dispatchWithSync = useCallback(
